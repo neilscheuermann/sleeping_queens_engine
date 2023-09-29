@@ -26,7 +26,7 @@ defmodule SleepingQueensEngine.QueenCard do
     %{name: "name12", value: 15}
   ]
 
-  def queens_pile() do
+  def queens_pile_shuffled() do
     for %{name: name, value: value} <- @queens do
       %QueenCard{
         name: name,
@@ -34,6 +34,7 @@ defmodule SleepingQueensEngine.QueenCard do
         special?: is_special?(name)
       }
     end
+    |> Enum.shuffle()
   end
 
   def place_queen(%QueenCard{} = queen, %QueenCoordinate{} = coordinate) do

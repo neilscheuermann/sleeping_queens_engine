@@ -6,8 +6,8 @@ defmodule SleepingQueensEngine.Card do
 
   @kings ~w(name1 name2 name3 name4 name5 name6 name7 name8 name9 name10)a
 
-  def draw_pile(),
-    do:
+  def draw_pile_shuffled() do
+    cards =
       kings() ++
         jesters() ++
         knights() ++
@@ -15,6 +15,11 @@ defmodule SleepingQueensEngine.Card do
         sleeping_potions() ++
         wands() ++
         numbers()
+
+    shuffle(cards)
+  end
+
+  def shuffle(cards), do: Enum.shuffle(cards)
 
   ###
   # Private Functions
