@@ -1,8 +1,9 @@
 defmodule SleepingQueensEngine.Table do
+  alias __MODULE__
   alias SleepingQueensEngine.Card
   alias SleepingQueensEngine.Player
+  alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.QueensBoard
-  alias __MODULE__
 
   @enforce_keys [:draw_pile, :discard_pile, :queens_board, :players]
   defstruct [:draw_pile, :discard_pile, :queens_board, :players]
@@ -16,6 +17,7 @@ defmodule SleepingQueensEngine.Table do
     }
   end
 
+  # TODO>>>> Refactor this function
   def deal_cards(table) do
     updated_table =
       Enum.reduce_while(1..length(table.draw_pile), table, fn _num, table_acc ->
@@ -53,6 +55,24 @@ defmodule SleepingQueensEngine.Table do
     updated_table
   end
 
+  def select_queen(table, {_, _} = coordinate, player_position) do
+    case QueensBoard.take_queen(table.queens_board, coordinate) do
+      {%QueenCard{} = selected_queen, updated_queens_board} ->
+        updated_table =
+          table
+          |> update_queens_board(updated_queens_board)
+          |> update_players_with_new_queen(selected_queen, player_position)
+
+        {:ok, updated_table}
+
+      {nil, _updated_queens_board} ->
+        {:error, :no_queen_in_that_position}
+
+      {:error, error} -> 
+        {:error, error}
+    end
+  end
+
   ###
   # Private Functions
   #
@@ -63,9 +83,31 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
-  def find_player_needing_card(players) do
+  defp find_player_needing_card(players) do
     Enum.find(players, fn player ->
       length(player.hand) < 5
+    end)
+  end
+
+  defp give_player_queen(players, %QueenCard{} = queen, player_position) do
+    Enum.map(players, fn player ->
+      if player.position == player_position do
+        Player.pick_up_queen(player, queen)
+      else
+        player
+      end
+    end)
+  end
+
+  defp update_players_with_new_queen(table, selected_queen, player_position) do
+    update_in(table, [Access.key!(:players)], fn players ->
+      give_player_queen(players, selected_queen, player_position)
+    end)
+  end
+
+  defp update_queens_board(table, updated_queens_board) do
+    update_in(table, [Access.key!(:queens_board)], fn _queens_board ->
+      updated_queens_board
     end)
   end
 end
