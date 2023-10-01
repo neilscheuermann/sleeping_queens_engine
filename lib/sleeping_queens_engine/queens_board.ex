@@ -1,8 +1,8 @@
 defmodule SleepingQueensEngine.QueensBoard do
   alias SleepingQueensEngine.QueenCard
 
-  defguard is_valid_coordinate(row, col) 
-    when row >= 1 and row <= 4 and col >= 1 and col <= 4
+  defguard is_valid_coordinate(row, col)
+           when row >= 1 and row <= 4 and col >= 1 and col <= 4
 
   def new() do
     queens = QueenCard.queens_pile_shuffled()
@@ -19,8 +19,8 @@ defmodule SleepingQueensEngine.QueensBoard do
     board_map
   end
 
-  def take_queen(queens_board, {row, col} = coordinate) 
-    when is_valid_coordinate(row, col) do
+  def take_queen(queens_board, {row, col} = coordinate)
+      when is_valid_coordinate(row, col) do
     Map.get_and_update!(queens_board, coordinate, fn queen ->
       {queen, nil}
     end)

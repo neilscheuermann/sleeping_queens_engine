@@ -2,6 +2,13 @@ defmodule SleepingQueensEngine.QueenCard do
   alias SleepingQueensEngine.QueenCoordinate
   alias __MODULE__
 
+  @type t() :: %__MODULE__{
+          name: String.t(),
+          value: pos_integer(),
+          special?: boolean(),
+          # TODO>>>> Maybe remove?
+          coordinate: QueenCoordinate.t()
+        }
   @enforce_keys [:name, :value, :special?]
   defstruct [:name, :value, :special?, :coordinate]
 
@@ -26,6 +33,7 @@ defmodule SleepingQueensEngine.QueenCard do
     %{name: "name12", value: 15}
   ]
 
+  @spec queens_pile_shuffled() :: [QueenCard.t()]
   def queens_pile_shuffled() do
     for %{name: name, value: value} <- @queens do
       %QueenCard{
@@ -35,14 +43,6 @@ defmodule SleepingQueensEngine.QueenCard do
       }
     end
     |> Enum.shuffle()
-  end
-
-  def place_queen(%QueenCard{} = queen, %QueenCoordinate{} = coordinate) do
-    Map.put(queen, :coordinate, coordinate)
-  end
-
-  def remove_queen(%QueenCard{} = queen) do
-    Map.put(queen, :coordinate, nil)
   end
 
   ###

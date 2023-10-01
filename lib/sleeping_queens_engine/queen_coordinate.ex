@@ -1,6 +1,10 @@
 defmodule SleepingQueensEngine.QueenCoordinate do
   alias __MODULE__
   # Must define before `defstruct` to have an effect 
+  @type t() :: %__MODULE__{
+          col: pos_integer(),
+          row: pos_integer()
+        }
   @enforce_keys [:row, :col]
   defstruct [:row, :col]
 
@@ -10,5 +14,5 @@ defmodule SleepingQueensEngine.QueenCoordinate do
     {:ok, %QueenCoordinate{row: row, col: col}}
   end
 
-  def new(_row, _col), do: {:error, :invalid_coordinate}
+  def new(_row, _col), do: {:error, :invalid_queen_coordinate}
 end

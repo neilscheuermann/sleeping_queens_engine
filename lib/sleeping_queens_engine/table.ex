@@ -5,9 +5,26 @@ defmodule SleepingQueensEngine.Table do
   alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.QueensBoard
 
+  defguard have_enough_cards(card_positions)
+           when length(card_positions) > 0 and length(card_positions) <= 5
+
+  @type t() :: %__MODULE__{
+          draw_pile: list(),
+          discard_pile: list(),
+          queens_board: map(),
+          players: list()
+        }
   @enforce_keys [:draw_pile, :discard_pile, :queens_board, :players]
   defstruct [:draw_pile, :discard_pile, :queens_board, :players]
 
+  @type card_positions() :: [pos_integer()]
+  @type player_position() :: pos_integer()
+  @type queen_coordinate() :: {pos_integer(), pos_integer()}
+  @type play_error() :: :invalid_play
+  @type select_queen_error() ::
+          :no_queen_in_that_position | :invalid_queen_coordinate
+
+  @spec new([Player.t()]) :: Table.t()
   def new(players) do
     %Table{
       draw_pile: Card.draw_pile_shuffled(),
@@ -18,6 +35,7 @@ defmodule SleepingQueensEngine.Table do
   end
 
   # TODO>>>> Refactor this function
+  @spec deal_cards(Table.t()) :: Table.t()
   def deal_cards(table) do
     updated_table =
       Enum.reduce_while(1..length(table.draw_pile), table, fn _num, table_acc ->
@@ -55,6 +73,29 @@ defmodule SleepingQueensEngine.Table do
     updated_table
   end
 
+  @spec play_cards(Table.t(), card_positions(), player_position()) ::
+          {:ok, Table.t()} | {:error, play_error()}
+  def play_cards(table, card_positions, player_position)
+      when have_enough_cards(card_positions) do
+    {cards_to_play, updated_player} =
+      table
+      |> get_player(player_position)
+      |> Player.select_cards(card_positions)
+
+    updated_table =
+      table
+      |> update_player(updated_player)
+      |> add_to_discard_pile(cards_to_play)
+
+    {:ok, updated_table}
+  end
+
+  def play_cards(_table, _card_positions, _player_position) do
+    {:error, :invalid_play}
+  end
+
+  @spec select_queen(Table.t(), queen_coordinate(), card_positions()) ::
+          {:ok, Table.t()} | {:error, select_queen_error()}
   def select_queen(table, {_, _} = coordinate, player_position) do
     case QueensBoard.take_queen(table.queens_board, coordinate) do
       {%QueenCard{} = selected_queen, updated_queens_board} ->
@@ -68,7 +109,7 @@ defmodule SleepingQueensEngine.Table do
       {nil, _updated_queens_board} ->
         {:error, :no_queen_in_that_position}
 
-      {:error, error} -> 
+      {:error, error} ->
         {:error, error}
     end
   end
@@ -76,6 +117,33 @@ defmodule SleepingQueensEngine.Table do
   ###
   # Private Functions
   #
+
+  defp add_to_discard_pile(table, cards) do
+    update_in(table.discard_pile, fn discard_pile ->
+      [cards | discard_pile]
+    end)
+  end
+
+  defp get_player(table, player_position),
+    do: Enum.find(table.players, &(&1.position == player_position))
+
+  defp update_player(table, updated_player) do
+    update_in(table.players, fn players ->
+      do_update_player(players, updated_player)
+    end)
+  end
+
+  # TODO>>> Change player from a list to a map with player position for keys.
+  # Then I could replace with a Map.replace, rather than this Enum map.
+  defp do_update_player(players, updated_player) do
+    Enum.map(players, fn player ->
+      if player.position == updated_player.position do
+        updated_player
+      else
+        player
+      end
+    end)
+  end
 
   defp all_players_dealt?(players) do
     Enum.all?(players, fn player ->
@@ -99,14 +167,15 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
+  # TODO>>>> Just pass in the updated  queen to this function
   defp update_players_with_new_queen(table, selected_queen, player_position) do
-    update_in(table, [Access.key!(:players)], fn players ->
+    update_in(table.players, fn players ->
       give_player_queen(players, selected_queen, player_position)
     end)
   end
 
   defp update_queens_board(table, updated_queens_board) do
-    update_in(table, [Access.key!(:queens_board)], fn _queens_board ->
+    update_in(table.queens_board, fn _queens_board ->
       updated_queens_board
     end)
   end
