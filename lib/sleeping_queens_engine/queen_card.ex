@@ -12,7 +12,7 @@ defmodule SleepingQueensEngine.QueenCard do
   @enforce_keys [:name, :value, :special?]
   defstruct [:name, :value, :special?, :coordinate]
 
-  @special_queens ~w(rose strawberry cat dog)
+  @special_queen_names ~w(rose strawberry cat dog)
 
   @queens [
     %{name: "rose", value: 5},
@@ -49,6 +49,6 @@ defmodule SleepingQueensEngine.QueenCard do
   # Private Functions
   #
 
-  defp is_special?(name) when name in @special_queens, do: true
+  defp is_special?(name) when name in @special_queen_names, do: true
   defp is_special?(_name), do: false
 end

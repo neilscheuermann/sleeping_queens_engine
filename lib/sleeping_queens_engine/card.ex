@@ -12,6 +12,7 @@ defmodule SleepingQueensEngine.Card do
 
   @kings ~w(name1 name2 name3 name4 name5 name6 name7 name8 name9 name10)a
 
+  @spec draw_pile_shuffled() :: list(Card.t())
   def draw_pile_shuffled() do
     cards =
       kings() ++
@@ -25,6 +26,7 @@ defmodule SleepingQueensEngine.Card do
     shuffle(cards)
   end
 
+  @spec shuffle(list(Card.t())) :: list(Card.t())
   def shuffle(cards), do: Enum.shuffle(cards)
 
   ###
