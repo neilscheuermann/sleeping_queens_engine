@@ -5,9 +5,6 @@ defmodule SleepingQueensEngine.Table do
   alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.QueensBoard
 
-  defguard have_enough_cards(card_positions)
-           when length(card_positions) > 0 and length(card_positions) <= 5
-
   @type t() :: %__MODULE__{
           draw_pile: list(),
           discard_pile: list(),
@@ -23,6 +20,9 @@ defmodule SleepingQueensEngine.Table do
   @type play_error() :: :invalid_play
   @type select_queen_error() ::
           :no_queen_in_that_position | :invalid_queen_coordinate
+
+  defguard selected_enough_cards?(card_positions)
+           when length(card_positions) > 0 and length(card_positions) <= 5
 
   @spec new([Player.t()]) :: Table.t()
   def new(players) do
@@ -54,7 +54,7 @@ defmodule SleepingQueensEngine.Table do
               fn players ->
                 Enum.map(players, fn player ->
                   if player.name == player_needing_card.name do
-                    Player.pick_up_card(player, top_card)
+                    Player.add_card_to_hand(player, top_card)
                   else
                     player
                   end
@@ -76,7 +76,7 @@ defmodule SleepingQueensEngine.Table do
   @spec play_cards(Table.t(), card_positions(), player_position()) ::
           {:ok, Table.t()} | {:error, play_error()}
   def play_cards(table, card_positions, player_position)
-      when have_enough_cards(card_positions) do
+      when selected_enough_cards?(card_positions) do
     {cards_to_play, updated_player} =
       table
       |> get_player(player_position)
@@ -160,7 +160,7 @@ defmodule SleepingQueensEngine.Table do
   defp give_player_queen(players, %QueenCard{} = queen, player_position) do
     Enum.map(players, fn player ->
       if player.position == player_position do
-        Player.pick_up_queen(player, queen)
+        Player.add_queen(player, queen)
       else
         player
       end

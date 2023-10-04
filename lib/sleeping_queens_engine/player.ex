@@ -15,9 +15,15 @@ defmodule SleepingQueensEngine.Player do
   @type card_positions() :: [pos_integer()]
 
   @available_card_positions [1, 2, 3, 4, 5]
+  @max_number_of_players 5
+  @max_cards_allowed_in_hand 5
+
+  defguard selected_enough_cards?(card_positions)
+           when length(card_positions) > 0 and
+                  length(card_positions) <= @max_cards_allowed_in_hand
 
   @spec new(String.t(), pos_integer()) :: Player.t()
-  def new(name, position) when is_binary(name) and is_integer(position) do
+  def new(name, position) when is_binary(name) and position in 1..@max_number_of_players do
     %Player{
       hand: [],
       name: name,
@@ -28,7 +34,8 @@ defmodule SleepingQueensEngine.Player do
 
   @spec select_cards(Player.t(), card_positions()) ::
           {[Card.t()], Player.t()}
-  def select_cards(player, card_positions) do
+  def select_cards(player, card_positions)
+      when selected_enough_cards?(card_positions) do
     unselected_card_positions = @available_card_positions -- card_positions
 
     selected_cards = take_cards(player.hand, card_positions)
@@ -37,13 +44,13 @@ defmodule SleepingQueensEngine.Player do
     {selected_cards, update_hand(player, remaining_cards)}
   end
 
-  @spec pick_up_card(Player.t(), Card.t()) :: Player.t()
-  def pick_up_card(player, card) when length(player.hand) <= 5 do
+  @spec add_card_to_hand(Player.t(), Card.t()) :: Player.t()
+  def add_card_to_hand(player, card) when length(player.hand) < @max_cards_allowed_in_hand do
     Map.put(player, :hand, [card | player.hand])
   end
 
-  @spec pick_up_queen(Player.t(), QueenCard.t()) :: Player.t()
-  def pick_up_queen(player, queen) do
+  @spec add_queen(Player.t(), QueenCard.t()) :: Player.t()
+  def add_queen(player, queen) do
     update_in(player.queens, fn queens -> [queen | queens] end)
   end
 
