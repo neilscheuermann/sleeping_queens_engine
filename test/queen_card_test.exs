@@ -23,13 +23,16 @@ defmodule QueenCardTest do
       refute queens_pile == new_queens_pile
     end
 
-    test "ensures each queen has a value of 5, 10, 15, or 20", %{queens_pile: queens_pile} do
+    test "ensures each queen has a value of 5, 10, 15, or 20", %{
+      queens_pile: queens_pile
+    } do
       assert Enum.all?(queens_pile, &(&1.value in @valid_queen_values))
     end
 
-    test "ensures four of the queen cards are special (rose, strawberry, cat, and dog)", %{
-      queens_pile: queens_pile
-    } do
+    test "ensures four of the queen cards are special (rose, strawberry, cat, and dog)",
+         %{
+           queens_pile: queens_pile
+         } do
       assert Enum.count(queens_pile, fn queen ->
                queen.special? and queen.name in @special_queen_names
              end) == 4

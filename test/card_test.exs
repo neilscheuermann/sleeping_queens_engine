@@ -23,7 +23,8 @@ defmodule CardTest do
     end
 
     test "it returns 4 sleeping_potion cards", %{draw_pile: draw_pile} do
-      assert Enum.count(draw_pile, fn card -> card.type == :sleeping_potion end) == 4
+      assert Enum.count(draw_pile, fn card -> card.type == :sleeping_potion end) ==
+               4
     end
 
     test "it returns 3 dragon cards", %{draw_pile: draw_pile} do

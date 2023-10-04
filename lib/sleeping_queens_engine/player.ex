@@ -23,7 +23,8 @@ defmodule SleepingQueensEngine.Player do
                   length(card_positions) <= @max_cards_allowed_in_hand
 
   @spec new(String.t(), pos_integer()) :: Player.t()
-  def new(name, position) when is_binary(name) and position in 1..@max_number_of_players do
+  def new(name, position)
+      when is_binary(name) and position in 1..@max_number_of_players do
     %Player{
       hand: [],
       name: name,
@@ -45,7 +46,8 @@ defmodule SleepingQueensEngine.Player do
   end
 
   @spec add_card_to_hand(Player.t(), Card.t()) :: Player.t()
-  def add_card_to_hand(player, card) when length(player.hand) < @max_cards_allowed_in_hand do
+  def add_card_to_hand(player, card)
+      when length(player.hand) < @max_cards_allowed_in_hand do
     Map.put(player, :hand, [card | player.hand])
   end
 

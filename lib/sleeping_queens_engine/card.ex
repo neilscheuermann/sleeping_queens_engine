@@ -8,7 +8,16 @@ defmodule SleepingQueensEngine.Card do
         }
   @enforce_keys [:type]
   defstruct [:type, :name, :value]
-  @type card() :: [:king | :number | :wand | :dragon | :sleeping_potion | :knight | :jester]
+
+  @type card() :: [
+          :king
+          | :number
+          | :wand
+          | :dragon
+          | :sleeping_potion
+          | :knight
+          | :jester
+        ]
 
   @kings ~w(name1 name2 name3 name4 name5 name6 name7 name8 name9 name10)a
 

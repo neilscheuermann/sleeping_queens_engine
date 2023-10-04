@@ -54,9 +54,14 @@ defmodule PlayerTest do
 
       player = Map.put(player, :hand, hand)
 
-      assert {selected_cards, updated_player} = Player.select_cards(player, [1, 2])
+      assert {selected_cards, updated_player} =
+               Player.select_cards(player, [1, 2])
 
-      assert selected_cards == [%Card{type: :number, value: 1}, %Card{type: :number, value: 2}]
+      assert selected_cards == [
+               %Card{type: :number, value: 1},
+               %Card{type: :number, value: 2}
+             ]
+
       assert %Player{} = updated_player
       assert updated_player.hand == [%Card{type: :number, value: 3}]
     end
@@ -67,7 +72,9 @@ defmodule PlayerTest do
       end
     end
 
-    test "throws match error if too many positions are selected", %{player: player} do
+    test "throws match error if too many positions are selected", %{
+      player: player
+    } do
       assert_raise FunctionClauseError, fn ->
         Player.select_cards(player, [1, 2, 3, 4, 5, 6])
       end
@@ -75,9 +82,10 @@ defmodule PlayerTest do
   end
 
   describe "add_card_to_hand/2" do
-    test "returns an updated player with the given card added to the player's hand", %{
-      player: player
-    } do
+    test "returns an updated player with the given card added to the player's hand",
+         %{
+           player: player
+         } do
       card = %Card{type: :number, value: 1}
 
       updated_player = Player.add_card_to_hand(player, card)
@@ -86,7 +94,9 @@ defmodule PlayerTest do
       assert updated_player.hand == [card]
     end
 
-    test "throws match error if player already has 5 cards in their hand", %{player: player} do
+    test "throws match error if player already has 5 cards in their hand", %{
+      player: player
+    } do
       hand =
         for value <- 1..@max_cards_allowed_in_hand do
           %Card{type: :number, value: value}
@@ -101,9 +111,10 @@ defmodule PlayerTest do
   end
 
   describe "add_queen/2" do
-    test "returns an updated player with the given queen card added to the player's queens", %{
-      player: player
-    } do
+    test "returns an updated player with the given queen card added to the player's queens",
+         %{
+           player: player
+         } do
       queen_card = %QueenCard{name: "rose", value: 5, special?: true}
 
       updated_player = Player.add_queen(player, queen_card)
@@ -114,9 +125,10 @@ defmodule PlayerTest do
   end
 
   describe "lose_queen/2" do
-    test "returns an updated player and the queen card found at the given queen card index", %{
-      player: player
-    } do
+    test "returns an updated player and the queen card found at the given queen card index",
+         %{
+           player: player
+         } do
       queen_card = %QueenCard{name: "rose", value: 5, special?: true}
 
       player = Map.put(player, :queens, [queen_card])
