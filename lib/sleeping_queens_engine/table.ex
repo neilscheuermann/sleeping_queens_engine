@@ -17,7 +17,7 @@ defmodule SleepingQueensEngine.Table do
   @type card_positions() :: [pos_integer()]
   @type player_position() :: pos_integer()
   @type queen_coordinate() :: {pos_integer(), pos_integer()}
-  @type play_error() :: :invalid_play
+  @type discard_error() :: :invalid_card_selections
   @type select_queen_error() ::
           :no_queen_in_that_position | :invalid_queen_coordinate
 
@@ -27,10 +27,10 @@ defmodule SleepingQueensEngine.Table do
   @spec new([Player.t()]) :: Table.t()
   def new(players) do
     %Table{
-      draw_pile: Card.draw_pile_shuffled(),
       discard_pile: [],
-      queens_board: QueensBoard.new(),
-      players: players
+      draw_pile: Card.draw_pile_shuffled(),
+      players: players,
+      queens_board: QueensBoard.new()
     }
   end
 
@@ -73,9 +73,9 @@ defmodule SleepingQueensEngine.Table do
     updated_table
   end
 
-  @spec play_cards(Table.t(), card_positions(), player_position()) ::
-          {:ok, Table.t()} | {:error, play_error()}
-  def play_cards(table, card_positions, player_position)
+  @spec discard_cards(Table.t(), card_positions(), player_position()) ::
+          {:ok, Table.t()} | {:error, discard_error()}
+  def discard_cards(table, card_positions, player_position)
       when selected_enough_cards?(card_positions) do
     {cards_to_play, updated_player} =
       table
@@ -90,8 +90,8 @@ defmodule SleepingQueensEngine.Table do
     {:ok, updated_table}
   end
 
-  def play_cards(_table, _card_positions, _player_position) do
-    {:error, :invalid_play}
+  def discard_cards(_table, _card_positions, _player_position) do
+    {:error, :invalid_card_selections}
   end
 
   @spec select_queen(Table.t(), queen_coordinate(), card_positions()) ::

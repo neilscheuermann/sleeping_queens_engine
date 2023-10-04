@@ -10,6 +10,14 @@ defmodule CardTest do
   end
 
   describe "draw_pile_shuffled/1" do
+    test "it returns 68 total cards", %{draw_pile: draw_pile} do
+      assert Enum.count(draw_pile) == 68
+    end
+
+    test "it returns 40 number cards", %{draw_pile: draw_pile} do
+      assert Enum.count(draw_pile, fn card -> card.type == :number end) == 40
+    end
+
     test "it returns 10 king cards", %{draw_pile: draw_pile} do
       assert Enum.count(draw_pile, fn card -> card.type == :king end) == 10
     end
