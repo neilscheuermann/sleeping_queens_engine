@@ -20,20 +20,20 @@ following commands.
 alias SleepingQueensEngine.Player
 alias SleepingQueensEngine.Table
 
-player1 = Player.new("neil", 1)
-player2 = Player.new("beth", 2)
+player1 = Player.new("neil")
+player2 = Player.new("beth")
 players = [player1, player2]
 
-# TEST: new table
+# new table
 table = Table.new(players)
 
-# TEST: deal cards
+# deal cards
 table = Table.deal_cards(table)
 
-# TEST: discard cards
+# discard cards
 {:ok, table} = Table.discard_cards(table, [1], 1)
 
-# TEST: Select queen
+# Select queen
 {:ok, table} = Table.select_queen(table, {1, 1}, 1)
 # error if selcting a nil queen
 {:ok, table} = Table.select_queen(table, {1, 1}, 1)

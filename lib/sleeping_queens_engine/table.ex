@@ -26,6 +26,8 @@ defmodule SleepingQueensEngine.Table do
 
   @spec new([Player.t()]) :: Table.t()
   def new(players) do
+    players = assign_player_positions(players)
+
     %Table{
       discard_pile: [],
       draw_pile: Card.draw_pile_shuffled(),
@@ -121,6 +123,14 @@ defmodule SleepingQueensEngine.Table do
   defp add_to_discard_pile(table, cards) do
     update_in(table.discard_pile, fn discard_pile ->
       [cards | discard_pile]
+    end)
+  end
+
+  defp assign_player_positions(players) do
+    players
+    |> Enum.with_index()
+    |> Enum.map(fn {player, index} ->
+      Map.replace(player, :position, index + 1)
     end)
   end
 

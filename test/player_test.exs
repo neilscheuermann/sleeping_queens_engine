@@ -5,40 +5,32 @@ defmodule PlayerTest do
   alias SleepingQueensEngine.Player
   alias SleepingQueensEngine.QueenCard
 
-  @max_number_of_players 5
   @max_cards_allowed_in_hand 5
 
   setup do
     name = "Ron"
-    position = 1
-    player = Player.new(name, position)
+    player = Player.new(name)
 
     %{player: player}
   end
 
-  describe "new/2" do
-    test "returns a player with required fields when given a name and position" do
+  describe "new/1" do
+    test "returns a player with required fields when given a name" do
       name = "Ron"
-      position = 1
-      player = Player.new(name, position)
+      player = Player.new(name)
 
       assert %Player{
                hand: [],
                name: ^name,
-               position: ^position,
+               position: nil,
                queens: []
              } = player
     end
 
-    test "throws match error if position is outside range of max allowed number of players" do
+    test "throws match error if name is not a string" do
       assert_raise FunctionClauseError, fn ->
-        invalid_position = @max_number_of_players + 1
-        Player.new("Ron", invalid_position)
-      end
-
-      assert_raise FunctionClauseError, fn ->
-        invalid_position = 0
-        Player.new("Ron", invalid_position)
+        not_a_string = 'Ron'
+        Player.new(not_a_string)
       end
     end
   end

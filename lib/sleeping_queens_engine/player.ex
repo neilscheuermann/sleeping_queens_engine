@@ -9,26 +9,23 @@ defmodule SleepingQueensEngine.Player do
           position: pos_integer(),
           queens: list()
         }
-  @enforce_keys [:hand, :name, :position, :queens]
+  @enforce_keys [:hand, :name, :queens]
   defstruct [:hand, :name, :position, :queens]
 
   @type card_positions() :: [pos_integer()]
 
   @available_card_positions [1, 2, 3, 4, 5]
-  @max_number_of_players 5
   @max_cards_allowed_in_hand 5
 
   defguard selected_enough_cards?(card_positions)
            when length(card_positions) > 0 and
                   length(card_positions) <= @max_cards_allowed_in_hand
 
-  @spec new(String.t(), pos_integer()) :: Player.t()
-  def new(name, position)
-      when is_binary(name) and position in 1..@max_number_of_players do
+  @spec new(String.t()) :: Player.t()
+  def new(name) when is_binary(name) do
     %Player{
       hand: [],
       name: name,
-      position: position,
       queens: []
     }
   end
