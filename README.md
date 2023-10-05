@@ -11,10 +11,12 @@ the same.]_
 - [Sleeping Queens rules](https://gamewright.com/pdfs/Rules/SleepingQueensTM-RULES.pdf)
 - [Sleeping Queens rules (new)](https://gamewright.com/pdfs/Rules/Sleeping-Queens-Rules.pdf)
 
-## Testing game play
+## Testing game actions and rule checks
 
 Can test gameplay from an interactive Elixir shell (`iex -S mix`) to run the
 following commands.
+
+### Game actions
 
 ```elixir
 alias SleepingQueensEngine.Player
@@ -39,6 +41,30 @@ table = Table.deal_cards(table)
 {:ok, table} = Table.select_queen(table, {1, 1}, 1)
 # error if selecting invalid queens_board coordinate
 {:ok, table} = Table.select_queen(table, {1, 5}, 1)
+```
+
+### Rule checks
+
+```elixir
+alias SleepingQueensEngine.Rules
+
+rules = Rules.new()
+
+# add player should increment :player_count
+{:ok, rules} = Rules.check(rules, :add_player)
+
+# remove player should decrement :player_count
+{:ok, rules} = Rules.check(rules, :remove_player)
+
+# start game should change state to :playing
+{:ok, rules} = Rules.check(rules, :start_game)
+
+# deal cards should cycle :player_turn through available players
+{:ok, rules} = Rules.check(rules, :deal_cards)
+
+# win check with a :win should change state to :game_over
+{:ok, rules} = Rules.check(rules, {:win_check, :no_win})
+{:ok, rules} = Rules.check(rules, {:win_check, :win})
 ```
 
 ## Installation
