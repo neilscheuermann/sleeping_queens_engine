@@ -41,9 +41,18 @@ table = Table.deal_cards(table)
 {:ok, table} = Table.select_queen(table, {1, 1}, 1)
 # error if selecting invalid queens_board coordinate
 {:ok, table} = Table.select_queen(table, {1, 5}, 1)
+
+# Place queen back on board
+{:ok, table} = Table.place_queen_on_board(table, 1, 1, {1, 1})
+
+# Select queen again
+{:ok, table} = Table.select_queen(table, {1, 1}, 1)
+
+# Player 2 steal queen
+{:ok, table} = Table.steal_queen(table, 1, 1, 2)
 ```
 
-### Rule checks
+### Game Rules
 
 ```elixir
 alias SleepingQueensEngine.Rules

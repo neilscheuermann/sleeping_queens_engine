@@ -33,14 +33,17 @@ defmodule SleepingQueensEngine.QueenCard do
     %{name: "name12", value: 15}
   ]
 
+  def new(name, value),
+    do: %QueenCard{
+      name: name,
+      value: value,
+      special?: is_special?(name)
+    }
+
   @spec queens_pile_shuffled() :: [QueenCard.t()]
   def queens_pile_shuffled() do
     for %{name: name, value: value} <- @queens do
-      %QueenCard{
-        name: name,
-        value: value,
-        special?: is_special?(name)
-      }
+      new(name, value)
     end
     |> Enum.shuffle()
   end

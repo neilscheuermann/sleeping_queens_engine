@@ -16,10 +16,19 @@ defmodule SleepingQueensEngine.Table do
 
   @type card_positions() :: [pos_integer()]
   @type player_position() :: pos_integer()
+  @type player_queen_position() :: pos_integer()
   @type queen_coordinate() :: {pos_integer(), pos_integer()}
   @type discard_error() :: :invalid_card_selections
   @type select_queen_error() ::
-          :no_queen_in_that_position | :invalid_queen_coordinate
+          :no_queen_at_that_position | :invalid_coordinate
+  @type steal_queen_error() ::
+          :queen_exists_at_coordinate | :invalid_coordinate
+  @type steal_queen_params() :: %{
+          opponent_player_position: player_position(),
+          opponent_queen_position: player_queen_position(),
+          queen_coordinate: queen_coordinate() | nil,
+          stealing_player_position: player_position() | nil
+        }
 
   defguard selected_enough_cards?(card_positions)
            when length(card_positions) > 0 and length(card_positions) <= 5
@@ -96,7 +105,7 @@ defmodule SleepingQueensEngine.Table do
     {:error, :invalid_card_selections}
   end
 
-  @spec select_queen(Table.t(), queen_coordinate(), card_positions()) ::
+  @spec select_queen(Table.t(), queen_coordinate(), player_position()) ::
           {:ok, Table.t()} | {:error, select_queen_error()}
   def select_queen(table, {_, _} = coordinate, player_position) do
     case QueensBoard.take_queen(table.queens_board, coordinate) do
@@ -109,8 +118,71 @@ defmodule SleepingQueensEngine.Table do
         {:ok, updated_table}
 
       {nil, _updated_queens_board} ->
-        {:error, :no_queen_in_that_position}
+        {:error, :no_queen_at_that_position}
 
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @spec place_queen_on_board(
+          Table.t(),
+          player_position(),
+          player_queen_position(),
+          queen_coordinate()
+        ) ::
+          {:ok, Table.t()} | {:error, steal_queen_error()}
+  def place_queen_on_board(
+        table,
+        player_position,
+        queen_position,
+        queen_coordinate
+      ) do
+    player = get_player(table, player_position)
+
+    with {:ok, {updated_player, queen}} <-
+           Player.lose_queen(player, queen_position),
+         {:ok, updated_queens_board} <-
+           QueensBoard.place_queen(table.queens_board, queen_coordinate, queen) do
+      updated_table =
+        table
+        |> update_queens_board(updated_queens_board)
+        |> update_player(updated_player)
+
+      {:ok, updated_table}
+    else
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @spec steal_queen(
+          Table.t(),
+          player_position(),
+          player_queen_position(),
+          player_position()
+        ) ::
+          {:ok, Table.t()} | {:error, steal_queen_error()}
+  def steal_queen(
+        table,
+        opponent_player_position,
+        opponent_queen_position,
+        stealing_player_position
+      ) do
+    opponent = get_player(table, opponent_player_position)
+    player = get_player(table, stealing_player_position)
+
+    with {:ok, {updated_opponent, queen}} <-
+           Player.lose_queen(opponent, opponent_queen_position),
+         updated_player <-
+           Player.add_queen(player, queen) do
+      updated_table =
+        table
+        |> update_player(updated_opponent)
+        |> update_player(updated_player)
+
+      {:ok, updated_table}
+    else
       {:error, error} ->
         {:error, error}
     end
@@ -143,7 +215,7 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
-  # TODO>>> Change player from a list to a map with player position for keys.
+  # TODO>>> Change players from a list to a map with player position for keys.
   # Then I could replace with a Map.replace, rather than this Enum map.
   defp do_update_player(players, updated_player) do
     Enum.map(players, fn player ->

@@ -73,4 +73,37 @@ defmodule QueensBoardTest do
                QueensBoard.take_queen(queens_board, invalid_coordinate)
     end
   end
+
+  describe "place_queen/2" do
+    test "successfully returns the updated queens_board with the queen card placed in the provided coordinate" do
+      queens_board = QueensBoard.new()
+      coordinate = {1, 1}
+      {queen, queens_board} = QueensBoard.take_queen(queens_board, coordinate)
+
+      assert is_nil(queens_board[coordinate])
+
+      assert {:ok, queens_board} =
+               QueensBoard.place_queen(queens_board, coordinate, queen)
+
+      assert queens_board[coordinate] == queen
+    end
+
+    test "errors if the coordinate is already occupied by another queen" do
+      queens_board = QueensBoard.new()
+      coordinate = {1, 1}
+      queen = QueenCard.new("rose", 5)
+
+      assert {:error, :queen_exists_at_coordinate} =
+               QueensBoard.place_queen(queens_board, coordinate, queen)
+    end
+
+    test "errors if the coordinate is invalid" do
+      queens_board = QueensBoard.new()
+      invalide_coordinate = {10, 10}
+      queen = QueenCard.new("rose", 5)
+
+      assert {:error, :invalid_coordinate} =
+               QueensBoard.place_queen(queens_board, invalide_coordinate, queen)
+    end
+  end
 end

@@ -49,7 +49,8 @@ defmodule SleepingQueensEngine.Rules do
           player_turn: player_turn
         } = rules,
         :deal_cards
-      ) when player_turn in 1..player_count do
+      )
+      when player_turn in 1..player_count do
     if player_turn == player_count do
       {:ok, %Rules{rules | player_turn: 1}}
     else

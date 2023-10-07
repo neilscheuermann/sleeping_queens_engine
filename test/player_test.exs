@@ -117,19 +117,49 @@ defmodule PlayerTest do
   end
 
   describe "lose_queen/2" do
-    test "returns an updated player and the queen card found at the given queen card index",
+    test "successfully returns an updated player and the queen card found at the given queen card position",
          %{
            player: player
          } do
       queen_card = %QueenCard{name: "rose", value: 5, special?: true}
+      queen_card_position = 1
 
       player = Map.put(player, :queens, [queen_card])
 
-      {updated_player, returned_queen_card} = Player.lose_queen(player, 0)
+      {:ok, {updated_player, returned_queen_card}} =
+        Player.lose_queen(player, queen_card_position)
 
       assert %Player{} = updated_player
       assert updated_player.queens == []
       assert returned_queen_card == queen_card
+    end
+
+    test "errors if no queen card found at the given queen card position",
+         %{
+           player: player
+         } do
+      queen_card = %QueenCard{name: "rose", value: 5, special?: true}
+      invalid_queen_card_position = 100
+
+      player = Map.put(player, :queens, [queen_card])
+
+      assert {:error, :no_queen_at_that_position} =
+               Player.lose_queen(player, invalid_queen_card_position)
+    end
+
+    test "raises error if given a zero or negative queen card position",
+         %{
+           player: player
+         } do
+      assert_raise FunctionClauseError, fn ->
+        zero_queen_card_position = 0
+        Player.lose_queen(player, zero_queen_card_position)
+      end
+
+      assert_raise FunctionClauseError, fn ->
+        negative_queen_card_position = -1
+        Player.lose_queen(player, negative_queen_card_position)
+      end
     end
   end
 end

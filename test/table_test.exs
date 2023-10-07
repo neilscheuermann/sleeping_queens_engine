@@ -8,6 +8,12 @@ defmodule TableTest do
 
   @expected_draw_pile_size 68
   @max_cards_allowed_in_hand 5
+  @player1_position 1
+  @player2_position 2
+  @queen_position 1
+  @queen_coordinate {1, 1}
+  @invalid_queen_coordinate {10, 10}
+  @invalid_queen_position 20
 
   describe "new/1" do
     test "returns a table with required fields and assigns positions when given a list of players" do
@@ -76,13 +82,12 @@ defmodule TableTest do
     test "success: returns an updated table, having discarded the player's selected card(s)",
          %{table: table} do
       card_positions = [1]
-      player1_position = 1
 
       assert {:ok, updated_table} =
-               Table.discard_cards(table, card_positions, player1_position)
+               Table.discard_cards(table, card_positions, @player1_position)
 
       updated_player1 =
-        Enum.find(updated_table.players, &(&1.position == player1_position))
+        Enum.find(updated_table.players, &(&1.position == @player1_position))
 
       assert length(updated_player1.hand) ==
                @max_cards_allowed_in_hand - length(card_positions)
@@ -95,7 +100,7 @@ defmodule TableTest do
       card_positions = []
 
       assert {:error, :invalid_card_selections} =
-               Table.discard_cards(table, card_positions, 1)
+               Table.discard_cards(table, card_positions, @player1_position)
     end
 
     test "error: returns error if too many cards are selected",
@@ -103,7 +108,7 @@ defmodule TableTest do
       card_positions = [1, 2, 3, 4, 5, 6]
 
       assert {:error, :invalid_card_selections} =
-               Table.discard_cards(table, card_positions, 1)
+               Table.discard_cards(table, card_positions, @player1_position)
     end
   end
 
@@ -123,39 +128,206 @@ defmodule TableTest do
 
     test "success: returns an updated table, having moved selected queen from board to player's queens pile",
          %{table: table} do
-      queen_coordinate = {1, 1}
-      player1_position = 1
-
-      assert %QueenCard{} = table.queens_board[queen_coordinate]
+      assert %QueenCard{} = table.queens_board[@queen_coordinate]
       assert Enum.all?(table.players, &(&1.queens == []))
 
       assert {:ok, updated_table} =
-               Table.select_queen(table, queen_coordinate, player1_position)
+               Table.select_queen(table, @queen_coordinate, @player1_position)
 
       updated_player1 =
-        Enum.find(updated_table.players, &(&1.position == player1_position))
+        Enum.find(updated_table.players, &(&1.position == @player1_position))
 
-      refute updated_table.queens_board[queen_coordinate]
+      refute updated_table.queens_board[@queen_coordinate]
       assert [%QueenCard{}] = updated_player1.queens
     end
 
     test "error: returns error if no queen at valid coordinate",
          %{table: table} do
-      valid_queen_coordinate = {1, 1}
-
       assert {:ok, updated_table} =
-               Table.select_queen(table, valid_queen_coordinate, 1)
+               Table.select_queen(
+                 table,
+                 @queen_coordinate,
+                 @player1_position
+               )
 
-      assert {:error, :no_queen_in_that_position} =
-               Table.select_queen(updated_table, valid_queen_coordinate, 1)
+      assert {:error, :no_queen_at_that_position} =
+               Table.select_queen(
+                 updated_table,
+                 @queen_coordinate,
+                 @player1_position
+               )
     end
 
     test "error: returns error with invalid coordinate integers",
          %{table: table} do
-      invalid_queen_coordinate = {10, 10}
-
       assert {:error, :invalid_coordinate} =
-               Table.select_queen(table, invalid_queen_coordinate, 1)
+               Table.select_queen(
+                 table,
+                 @invalid_queen_coordinate,
+                 @player1_position
+               )
     end
   end
+
+  describe "place_queen_on_board/4," do
+    setup do
+      player1 = Player.new("Ron")
+      player2 = Player.new("Leslie")
+      players = [player1, player2]
+
+      table =
+        players
+        |> Table.new()
+        |> Table.deal_cards()
+
+      # select queen and confirm it is with player1 and not on the board
+      {:ok, table} =
+        Table.select_queen(table, @queen_coordinate, @player1_position)
+
+      player_queen =
+        table
+        |> get_player(@player1_position)
+        |> get_queen(@queen_position)
+
+      assert %QueenCard{} = player_queen
+      refute Map.get(table.queens_board, @queen_coordinate)
+
+      %{
+        table: table
+      }
+    end
+
+    test "successfully returns an updated table, having moved player queen back to queens board",
+         %{table: table} do
+      # move player's queen back to queens board
+      {:ok, table} =
+        Table.place_queen_on_board(
+          table,
+          @player1_position,
+          @queen_position,
+          @queen_coordinate
+        )
+
+      # confirm queen is back on the board and not with player
+      player_queen =
+        table
+        |> get_player(@player1_position)
+        |> get_queen(@queen_position)
+
+      refute player_queen
+      assert Map.get(table.queens_board, @queen_coordinate)
+    end
+
+    test "errors if queen already exists at valid coordinate",
+         %{table: table} do
+      occupied_queen_coordinate = {1, 2}
+
+      # try placing where a queen exists
+      assert {:error, :queen_exists_at_coordinate} =
+               Table.place_queen_on_board(
+                 table,
+                 @player1_position,
+                 @queen_position,
+                 occupied_queen_coordinate
+               )
+    end
+
+    test "errors with invalid coordinate",
+         %{table: table} do
+      assert {:error, :invalid_coordinate} =
+               Table.place_queen_on_board(
+                 table,
+                 @player1_position,
+                 @queen_position,
+                 @invalid_queen_coordinate
+               )
+    end
+
+    test "errors if no queen in that player's queen position",
+         %{table: table} do
+      assert {:error, :no_queen_at_that_position} =
+               Table.place_queen_on_board(
+                 table,
+                 @player1_position,
+                 @invalid_queen_position,
+                 @queen_coordinate
+               )
+    end
+  end
+
+  describe "steal_queen/4" do
+    setup do
+      player1 = Player.new("Ron")
+      player2 = Player.new("Leslie")
+      players = [player1, player2]
+
+      table =
+        players
+        |> Table.new()
+        |> Table.deal_cards()
+
+      # select queen and confirm it is with player1 and not on the board
+      {:ok, table} =
+        Table.select_queen(table, @queen_coordinate, @player1_position)
+
+      player_queen =
+        table
+        |> get_player(@player1_position)
+        |> get_queen(@queen_position)
+
+      assert %QueenCard{} = player_queen
+      refute Map.get(table.queens_board, @queen_coordinate)
+
+      %{
+        table: table
+      }
+    end
+
+    test "successfully returns an updated table, having moved player1's queen to player2's queens pile",
+         %{table: table} do
+      # move player's queen back to queens board
+      {:ok, table} =
+        Table.steal_queen(
+          table,
+          @player1_position,
+          @queen_position,
+          @player2_position
+        )
+
+      # confirm queen is with player2 and not player1
+      player1_queen =
+        table
+        |> get_player(@player1_position)
+        |> get_queen(@queen_position)
+
+      player2_queen =
+        table
+        |> get_player(@player2_position)
+        |> get_queen(@queen_position)
+
+      refute player1_queen
+      assert player2_queen
+    end
+
+    test "errors if no queen in that player's queen position",
+         %{table: table} do
+      assert {:error, :no_queen_at_that_position} =
+               Table.steal_queen(
+                 table,
+                 @player1_position,
+                 @invalid_queen_position,
+                 @player2_position
+               )
+    end
+  end
+
+  ###
+  # Private Functions
+  #
+
+  defp get_player(table, player_position),
+    do: Enum.find(table.players, &(&1.position == player_position))
+
+  defp get_queen(player, queen_position),
+    do: Enum.at(player.queens, queen_position - 1)
 end

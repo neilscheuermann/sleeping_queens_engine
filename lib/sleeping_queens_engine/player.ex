@@ -13,6 +13,7 @@ defmodule SleepingQueensEngine.Player do
   defstruct [:hand, :name, :position, :queens]
 
   @type card_positions() :: [pos_integer()]
+  @type player_queen_position() :: pos_integer()
 
   @available_card_positions [1, 2, 3, 4, 5]
   @max_cards_allowed_in_hand 5
@@ -53,13 +54,21 @@ defmodule SleepingQueensEngine.Player do
     update_in(player.queens, fn queens -> [queen | queens] end)
   end
 
-  @spec lose_queen(Player.t(), non_neg_integer()) ::
-          {Player.t(), QueenCard.t()}
-  def lose_queen(player, queen_index) do
+  @spec lose_queen(Player.t(), player_queen_position()) ::
+          {:ok, {Player.t(), QueenCard.t()}}
+          | {:error, :no_queen_at_that_position}
+  def lose_queen(player, queen_position) when queen_position > 0 do
+    queen_index = queen_position - 1
     stolen_queen = Enum.at(player.queens, queen_index)
-    updated_player = update_in(player.queens, &List.delete_at(&1, queen_index))
 
-    {updated_player, stolen_queen}
+    if stolen_queen do
+      updated_player =
+        update_in(player.queens, &List.delete_at(&1, queen_index))
+
+      {:ok, {updated_player, stolen_queen}}
+    else
+      {:error, :no_queen_at_that_position}
+    end
   end
 
   ###

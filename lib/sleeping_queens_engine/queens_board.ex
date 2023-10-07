@@ -6,6 +6,8 @@ defmodule SleepingQueensEngine.QueensBoard do
 
   @type queens_board_coordinate() :: {pos_integer(), pos_integer()}
   @type queens_board() :: %{queens_board_coordinate() => QueenCard | nil}
+  @type place_queen_error() ::
+          :invalid_coordinate | :queen_exists_at_coordinate
 
   @spec new() :: queens_board()
   def new() do
@@ -34,6 +36,20 @@ defmodule SleepingQueensEngine.QueensBoard do
   end
 
   def take_queen(_queens_board, _coordinate) do
+    {:error, :invalid_coordinate}
+  end
+
+  @spec place_queen(queens_board(), queens_board_coordinate(), QueenCard.t()) ::
+          {:ok, queens_board()} | {:error, place_queen_error()}
+  def place_queen(queens_board, {row, col} = coordinate, queen)
+      when is_valid_coordinate(row, col) do
+    case Map.get(queens_board, coordinate) do
+      %QueenCard{} -> {:error, :queen_exists_at_coordinate}
+      nil -> {:ok, Map.replace!(queens_board, coordinate, queen)}
+    end
+  end
+
+  def place_queen(_queens_board, _coordinate, _queen) do
     {:error, :invalid_coordinate}
   end
 

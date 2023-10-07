@@ -12,6 +12,29 @@ defmodule QueenCardTest do
     %{queens_pile: queens_pile}
   end
 
+  describe "new/2" do
+    test "returns a queen card with required fields when given a name and value" do
+      name = "Some Queen"
+      value = 15
+
+      queen = QueenCard.new(name, value)
+
+      assert %QueenCard{
+               name: ^name,
+               value: ^value,
+               special?: false
+             } = queen
+    end
+
+    test "returns special? as true if queen name is one of listed special queens" do
+      special_name = Enum.random(@special_queen_names)
+
+      queen = QueenCard.new(special_name, 15)
+
+      assert queen.special?
+    end
+  end
+
   describe "queens_pile_shuffled/0" do
     test "returns a total of 16 queen cards", %{queens_pile: queens_pile} do
       assert Enum.count(queens_pile) == 16
