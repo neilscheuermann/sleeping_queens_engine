@@ -79,9 +79,25 @@ defmodule TableTest do
       %{table: table}
     end
 
-    test "success: returns an updated table, having discarded the player's selected card(s)",
+    test "success: returns an updated table, having discarded the player's selected card",
          %{table: table} do
       card_positions = [1]
+
+      assert {:ok, updated_table} =
+               Table.discard_cards(table, card_positions, @player1_position)
+
+      updated_player1 =
+        Enum.find(updated_table.players, &(&1.position == @player1_position))
+
+      assert length(updated_player1.hand) ==
+               @max_cards_allowed_in_hand - length(card_positions)
+
+      assert length(updated_table.discard_pile) == length(card_positions)
+    end
+
+    test "success with multiple card positions: returns an updated table, having discarded the player's selected cards",
+         %{table: table} do
+      card_positions = [1, 2]
 
       assert {:ok, updated_table} =
                Table.discard_cards(table, card_positions, @player1_position)

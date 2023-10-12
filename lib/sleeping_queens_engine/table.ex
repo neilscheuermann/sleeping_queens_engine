@@ -194,7 +194,7 @@ defmodule SleepingQueensEngine.Table do
 
   defp add_to_discard_pile(table, cards) do
     update_in(table.discard_pile, fn discard_pile ->
-      [cards | discard_pile]
+      cards ++ discard_pile
     end)
   end
 
