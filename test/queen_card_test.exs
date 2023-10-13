@@ -4,7 +4,6 @@ defmodule QueenCardTest do
   alias SleepingQueensEngine.QueenCard
 
   @special_queen_names ~w(rose strawberry cat dog)
-  @valid_queen_values [5, 10, 15, 20]
 
   setup_all do
     queens_pile = QueenCard.queens_pile_shuffled()
@@ -46,12 +45,6 @@ defmodule QueenCardTest do
       refute queens_pile == new_queens_pile
     end
 
-    test "ensures each queen has a value of 5, 10, 15, or 20", %{
-      queens_pile: queens_pile
-    } do
-      assert Enum.all?(queens_pile, &(&1.value in @valid_queen_values))
-    end
-
     test "ensures four of the queen cards are special (rose, strawberry, cat, and dog)",
          %{
            queens_pile: queens_pile
@@ -59,6 +52,22 @@ defmodule QueenCardTest do
       assert Enum.count(queens_pile, fn queen ->
                queen.special? and queen.name in @special_queen_names
              end) == 4
+    end
+
+    test "ensures 5 queens have a value of 5", %{queens_pile: queens_pile} do
+      assert 5 == Enum.count(queens_pile, &(&1.value == 5))
+    end
+
+    test "ensures 6 queens have a value of 10", %{queens_pile: queens_pile} do
+      assert 6 == Enum.count(queens_pile, &(&1.value == 10))
+    end
+
+    test "ensures 4 queens have a value of 15", %{queens_pile: queens_pile} do
+      assert 4 == Enum.count(queens_pile, &(&1.value == 15))
+    end
+
+    test "ensures 1 queen has a value of 20", %{queens_pile: queens_pile} do
+      assert 1 == Enum.count(queens_pile, &(&1.value == 20))
     end
   end
 end

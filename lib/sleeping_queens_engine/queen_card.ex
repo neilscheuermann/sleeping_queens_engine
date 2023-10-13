@@ -15,22 +15,22 @@ defmodule SleepingQueensEngine.QueenCard do
   @special_queen_names ~w(rose strawberry cat dog)
 
   @queens [
-    %{name: "rose", value: 5},
-    %{name: "strawberry", value: 10},
+    %{name: "book", value: 15},
+    %{name: "butterfly", value: 10},
+    %{name: "cake", value: 5},
     %{name: "cat", value: 15},
     %{name: "dog", value: 15},
-    %{name: "name1", value: 5},
-    %{name: "name2", value: 5},
-    %{name: "name3", value: 5},
-    %{name: "name4", value: 10},
-    %{name: "name5", value: 10},
-    %{name: "name6", value: 10},
-    %{name: "name7", value: 10},
-    %{name: "name8", value: 10},
-    %{name: "name9", value: 15},
-    %{name: "name10", value: 15},
-    %{name: "name11", value: 15},
-    %{name: "name12", value: 15}
+    %{name: "heart", value: 20},
+    %{name: "ice cream", value: 5},
+    %{name: "ladybug", value: 10},
+    %{name: "moon", value: 10},
+    %{name: "pancake", value: 15},
+    %{name: "peacock", value: 10},
+    %{name: "rainbow", value: 5},
+    %{name: "rose", value: 5},
+    %{name: "starfish", value: 5},
+    %{name: "strawberry", value: 10},
+    %{name: "sunflower", value: 10}
   ]
 
   def new(name, value),
