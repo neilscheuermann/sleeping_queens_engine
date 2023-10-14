@@ -5,6 +5,8 @@ defmodule SleepingQueensEngine.Table do
   alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.QueensBoard
 
+  @max_allowed_players 5
+
   @type t() :: %__MODULE__{
           draw_pile: list(),
           discard_pile: list(),
@@ -43,6 +45,19 @@ defmodule SleepingQueensEngine.Table do
       players: players,
       queens_board: QueensBoard.new()
     }
+  end
+
+  @spec add_player(Table.t(), Player.t()) :: Table.t()
+  def add_player(table, %Player{} = player)
+      when length(table.players) < @max_allowed_players do
+    next_available = length(table.players) + 1
+    player = Map.replace(player, :position, next_available)
+
+    {:ok, update_in(table.players, fn players -> [player | players] end)}
+  end
+
+  def add_player(_table, %Player{} = _player) do
+    {:error, :max_allowed_players_reached}
   end
 
   # TODO>>>> Refactor this function

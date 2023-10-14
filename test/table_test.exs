@@ -7,6 +7,7 @@ defmodule TableTest do
   alias SleepingQueensEngine.Player
 
   @expected_draw_pile_size 68
+  @max_allowed_players 5
   @max_cards_allowed_in_hand 5
   @player1_position 1
   @player2_position 2
@@ -33,11 +34,49 @@ defmodule TableTest do
                queens_board: %{}
              } = table
 
-      player1 = Enum.at(players, 0)
-      player2 = Enum.at(players, 1)
+      player1 = Enum.find(players, &(&1.name == player1.name))
+      player2 = Enum.find(players, &(&1.name == player2.name))
 
       assert player1.position == 1
       assert player2.position == 2
+    end
+  end
+
+  describe "add_player/2" do
+    test "successfully adds a player to the table" do
+      player1 = Player.new("Ron")
+      table = Table.new([player1])
+
+      new_player = Player.new("Leslie")
+      assert {:ok, table} = Table.add_player(table, new_player)
+
+      new_player = Enum.find(table.players, &(&1.name == new_player.name))
+      assert length(table.players) == 2
+      assert new_player.position == 2
+    end
+
+    test "errors if there are already max allowed players at the table" do
+      players =
+        for n <- 1..@max_allowed_players do
+          Player.new("Name#{n}")
+        end
+
+      table = Table.new(players)
+      new_player = Player.new("Jerry")
+
+      assert {:error, :max_allowed_players_reached} =
+               Table.add_player(table, new_player)
+    end
+
+    test "raises error if Player struct is not provided" do
+      player1 = Player.new("Ron")
+      table = Table.new([player1])
+
+      assert_raise FunctionClauseError, fn ->
+        not_a_player_struct = %{name: "Leslie"}
+
+        Table.add_player(table, not_a_player_struct)
+      end
     end
   end
 
