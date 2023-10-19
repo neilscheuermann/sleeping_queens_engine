@@ -8,7 +8,7 @@ defmodule TableTest do
 
   @expected_draw_pile_size 68
   @max_allowed_players 5
-  @max_cards_allowed_in_hand 5
+  @max_allowed_cards_in_hand 5
   @player1_position 1
   @player2_position 2
   @queen_position 1
@@ -83,24 +83,73 @@ defmodule TableTest do
   describe "deal_cards/1" do
     test "returns an updated table, having dealt cards from the draw pile to players until they each have 5 cards" do
       table = Table.new([Player.new("Ron"), Player.new("Leslie")])
-      player1 = Enum.find(table.players, &(&1.position == 1))
-      player2 = Enum.find(table.players, &(&1.position == 2))
 
-      assert player1.hand == []
-      assert player2.hand == []
+      assert Enum.all?(table.players, &(&1.hand == []))
       assert length(table.draw_pile) == @expected_draw_pile_size
 
-      updated_table = Table.deal_cards(table)
+      table = Table.deal_cards(table)
 
-      updated_player1 = Enum.find(updated_table.players, &(&1.position == 1))
-      updated_player2 = Enum.find(updated_table.players, &(&1.position == 2))
+      assert Enum.all?(
+               table.players,
+               &(length(&1.hand) == @max_allowed_cards_in_hand)
+             )
 
-      assert length(updated_player1.hand) == @max_cards_allowed_in_hand
-      assert length(updated_player2.hand) == @max_cards_allowed_in_hand
-
-      assert length(updated_table.draw_pile) ==
+      assert length(table.draw_pile) ==
                @expected_draw_pile_size -
-                 length(table.players) * @max_cards_allowed_in_hand
+                 length(table.players) * @max_allowed_cards_in_hand
+    end
+
+    test "successfully deals cards starting with given position, dealing sequentially to each player who needs cards" do
+      table =
+        Table.new([
+          Player.new("Ron"),
+          Player.new("Leslie"),
+          Player.new("Donna")
+        ])
+
+      player1_position = 1
+      player2_position = 2
+      player3_position = 3
+
+      three_cards =
+        for _ <- 1..3 do
+          %Card{type: :king}
+        end
+
+      five_cards =
+        for _ <- 1..5 do
+          %Card{type: :king}
+        end
+
+      simplified_draw_pile = [
+        %Card{type: :number, value: 1},
+        %Card{type: :number, value: 2},
+        %Card{type: :number, value: 3},
+        %Card{type: :number, value: 4}
+      ]
+
+      player1 = update_player_hand(table, player1_position, three_cards)
+      player2 = update_player_hand(table, player2_position, five_cards)
+      player3 = update_player_hand(table, player3_position, three_cards)
+
+      table =
+        table
+        |> update_draw_pile(simplified_draw_pile)
+        |> update_players([player1, player2, player3])
+
+      assert length(table.draw_pile) == 4
+
+      table = Table.deal_cards(table, player1_position)
+
+      player1 = Table.get_player(table, player1_position)
+      player2 = Table.get_player(table, player2_position)
+      player3 = Table.get_player(table, player3_position)
+
+      # Confirm only dealt to players 1 and 3, sequentially
+      assert [_, _, _, %Card{value: 1}, %Card{value: 3}] = player1.hand
+      assert Enum.all?(player2.hand, &(&1.type == :king))
+      assert [_, _, _, %Card{value: 2}, %Card{value: 4}] = player3.hand
+      assert table.draw_pile == []
     end
   end
 
@@ -129,7 +178,7 @@ defmodule TableTest do
         Enum.find(updated_table.players, &(&1.position == @player1_position))
 
       assert length(updated_player1.hand) ==
-               @max_cards_allowed_in_hand - length(card_positions)
+               @max_allowed_cards_in_hand - length(card_positions)
 
       assert length(updated_table.discard_pile) == length(card_positions)
     end
@@ -145,7 +194,7 @@ defmodule TableTest do
         Enum.find(updated_table.players, &(&1.position == @player1_position))
 
       assert length(updated_player1.hand) ==
-               @max_cards_allowed_in_hand - length(card_positions)
+               @max_allowed_cards_in_hand - length(card_positions)
 
       assert length(updated_table.discard_pile) == length(card_positions)
     end
@@ -385,4 +434,18 @@ defmodule TableTest do
 
   defp get_queen(player, queen_position),
     do: Enum.at(player.queens, queen_position - 1)
+
+  defp update_player_hand(table, player_position, new_hand) do
+    table.players
+    |> Enum.find(&(&1.position == player_position))
+    |> update_in([Access.key!(:hand)], fn _hand -> new_hand end)
+  end
+
+  defp update_draw_pile(table, updated_draw_pile) do
+    update_in(table.draw_pile, fn _draw_pile -> updated_draw_pile end)
+  end
+
+  defp update_players(table, updated_players) do
+    update_in(table.players, fn _players -> updated_players end)
+  end
 end

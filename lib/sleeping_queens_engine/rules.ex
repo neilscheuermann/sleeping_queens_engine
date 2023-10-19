@@ -1,18 +1,33 @@
 defmodule SleepingQueensEngine.Rules do
   alias __MODULE__
 
-  @type valid_game_states() :: :initialized | :playing | :game_over
   @type t() :: %__MODULE__{
           state: valid_game_states(),
           player_count: pos_integer(),
-          player_turn: pos_integer()
+          player_turn: pos_integer(),
+          waiting_on: nil | waiting_on()
+        }
+
+  @type player_position() :: pos_integer()
+  @type valid_game_states() :: :initialized | :playing | :game_over
+  @type waiting_on_actions() ::
+          :select_queen
+          | :draw_for_jester
+          | :block_steal_queen
+          | :block_place_queen_back_on_board
+          | :steal_queen
+          | :place_queen_back_on_board
+  @type waiting_on() :: %{
+          player_position: player_position(),
+          action: waiting_on_actions()
         }
   defstruct state: :initialized,
             player_count: 1,
-            player_turn: 1
+            player_turn: 1,
+            waiting_on: nil
 
   @range_of_allowed_players 2..5
-  @max_player_limit 5
+  @max_allowed_players 5
 
   @spec new() :: Rules.t()
   def new(), do: %Rules{}
@@ -22,7 +37,7 @@ defmodule SleepingQueensEngine.Rules do
         %Rules{state: :initialized, player_count: player_count} = rules,
         :add_player
       )
-      when player_count in 1..(@max_player_limit - 1) do
+      when player_count in 1..(@max_allowed_players - 1) do
     {:ok, %Rules{rules | player_count: player_count + 1}}
   end
 
@@ -56,6 +71,37 @@ defmodule SleepingQueensEngine.Rules do
     else
       {:ok, %Rules{rules | player_turn: player_turn + 1}}
     end
+  end
+
+  def check(
+        %Rules{
+          state: :playing,
+          waiting_on: %{
+            player_position: waiting_player_position
+          }
+        } = rules,
+        {:play, player_position, waiting_on}
+      )
+      when player_position == waiting_player_position do
+    {:ok, %Rules{rules | waiting_on: waiting_on}}
+  end
+
+  def check(
+        %Rules{
+          state: :playing,
+          player_turn: player_turn
+        } = rules,
+        {:play, player_position, waiting_on}
+      )
+      when player_position == player_turn do
+    {:ok, %Rules{rules | waiting_on: waiting_on}}
+  end
+
+  def check(
+        %Rules{state: :playing},
+        {:play, _, _}
+      ) do
+    {:error, :not_your_turn}
   end
 
   def check(

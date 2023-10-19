@@ -16,11 +16,11 @@ defmodule SleepingQueensEngine.Player do
   @type player_queen_position() :: pos_integer()
 
   @available_card_positions [1, 2, 3, 4, 5]
-  @max_cards_allowed_in_hand 5
+  @max_allowed_cards_in_hand 5
 
   defguard selected_enough_cards?(card_positions)
            when length(card_positions) > 0 and
-                  length(card_positions) <= @max_cards_allowed_in_hand
+                  length(card_positions) <= @max_allowed_cards_in_hand
 
   @spec new(String.t()) :: Player.t()
   def new(name) when is_binary(name) do
@@ -43,10 +43,10 @@ defmodule SleepingQueensEngine.Player do
     {selected_cards, update_hand(player, remaining_cards)}
   end
 
-  @spec add_card_to_hand(Player.t(), Card.t()) :: Player.t()
-  def add_card_to_hand(player, card)
-      when length(player.hand) < @max_cards_allowed_in_hand do
-    Map.put(player, :hand, [card | player.hand])
+  @spec add_cards_to_hand(Player.t(), [Card.t()]) :: Player.t()
+  def add_cards_to_hand(player, cards)
+      when length(player.hand) + length(cards) <= @max_allowed_cards_in_hand do
+    Map.put(player, :hand, player.hand ++ cards)
   end
 
   @spec add_queen(Player.t(), QueenCard.t()) :: Player.t()

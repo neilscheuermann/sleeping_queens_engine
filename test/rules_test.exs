@@ -4,7 +4,7 @@ defmodule RulesTest do
   alias SleepingQueensEngine.Rules
 
   @range_of_allowed_players 2..5
-  @max_player_limit 5
+  @max_allowed_players 5
 
   describe "new/0" do
     test "returns a Rules struct with required fields to track game state" do
@@ -34,7 +34,7 @@ defmodule RulesTest do
     end
 
     test ":add_player errors when player_count is at max limit", %{rules: rules} do
-      rules = Map.replace(rules, :player_count, @max_player_limit)
+      rules = Map.replace(rules, :player_count, @max_allowed_players)
 
       assert :error = Rules.check(rules, :add_player)
     end
@@ -98,6 +98,46 @@ defmodule RulesTest do
     end
 
     test ":deal_cards errors when player_turn is outside range of players", %{
+      rules: rules
+    } do
+      rules =
+        rules
+        |> Map.replace(:player_count, 3)
+        |> Map.replace(:player_turn, 100)
+
+      assert :error = Rules.check(rules, :start_game)
+    end
+
+    test ":play returns success and updates waiting_on when it's the waiting_on player's turn",
+         %{rules: rules} do
+      waiting_player_position = 1
+
+      rules =
+        Map.replace(rules, :waiting_on, %{
+          player_position: waiting_player_position
+        })
+
+      assert {:ok, rules} =
+               Rules.check(rules, {:play, waiting_player_position, nil})
+
+      refute rules.waiting_on
+    end
+
+    test ":play returns success and updates waiting_on when it's main player's turn",
+         %{rules: rules} do
+      player_position = 1
+      rules = Map.replace(rules, :player_turn, player_position)
+      waiting_on = %{}
+
+      refute rules.waiting_on
+
+      assert {:ok, rules} =
+               Rules.check(rules, {:play, player_position, waiting_on})
+
+      assert rules.waiting_on == waiting_on
+    end
+
+    test ":play errors when it's not the player's turn", %{
       rules: rules
     } do
       rules =

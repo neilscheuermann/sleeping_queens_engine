@@ -5,7 +5,7 @@ defmodule PlayerTest do
   alias SleepingQueensEngine.Player
   alias SleepingQueensEngine.QueenCard
 
-  @max_cards_allowed_in_hand 5
+  @max_allowed_cards_in_hand 5
 
   setup do
     name = "Ron"
@@ -73,31 +73,46 @@ defmodule PlayerTest do
     end
   end
 
-  describe "add_card_to_hand/2" do
+  describe "add_cards_to_hand/2" do
     test "returns an updated player with the given card added to the player's hand",
          %{
            player: player
          } do
       card = %Card{type: :number, value: 1}
 
-      updated_player = Player.add_card_to_hand(player, card)
+      updated_player = Player.add_cards_to_hand(player, [card])
 
       assert %Player{} = updated_player
       assert updated_player.hand == [card]
     end
 
-    test "throws match error if player already has 5 cards in their hand", %{
-      player: player
-    } do
+    test "returns an updated player with multiple cards added to the player's hand",
+         %{
+           player: player
+         } do
+      cards = [%Card{type: :number, value: 1}, %Card{type: :number, value: 1}]
+
+      updated_player = Player.add_cards_to_hand(player, cards)
+
+      assert %Player{} = updated_player
+      assert updated_player.hand == cards
+    end
+
+    test "throws match error if cards being added push the player's total cards over the limit",
+         %{
+           player: player
+         } do
       hand =
-        for value <- 1..@max_cards_allowed_in_hand do
+        for value <- 1..@max_allowed_cards_in_hand do
           %Card{type: :number, value: value}
         end
+
+      card = %Card{type: :number, value: 1}
 
       player = Map.put(player, :hand, hand)
 
       assert_raise FunctionClauseError, fn ->
-        Player.add_card_to_hand(player, [])
+        Player.add_cards_to_hand(player, [card])
       end
     end
   end
