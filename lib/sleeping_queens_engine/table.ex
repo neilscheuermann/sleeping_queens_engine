@@ -36,6 +36,15 @@ defmodule SleepingQueensEngine.Table do
   defguard selected_enough_cards?(card_positions)
            when length(card_positions) > 0 and length(card_positions) <= 5
 
+  @doc """
+  Given a list of players it creates a new Table holding needed game entities
+  ## Example
+    iex> alias SleepingQueensEngine.{Table, Player}
+    iex> players = [Player.new("Ron")]
+    iex> table = Table.new(players)
+    iex> %Table{discard_pile: _, draw_pile: _, players: _, queens_board: _} 
+    ...>   = table
+  """
   @spec new([Player.t()]) :: Table.t()
   def new(players) do
     players = assign_player_positions(players)

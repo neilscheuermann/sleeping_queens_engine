@@ -22,6 +22,13 @@ defmodule SleepingQueensEngine.Player do
            when length(card_positions) > 0 and
                   length(card_positions) <= @max_allowed_cards_in_hand
 
+  @doc """
+  Given a list of players it creates a new Table holding needed game entities
+  ## Example
+    iex> alias SleepingQueensEngine.Player
+    iex> Player.new("Ron")
+    %Player{name: "Ron", hand: [], queens: [], position: nil}
+  """
   @spec new(String.t()) :: Player.t()
   def new(name) when is_binary(name) do
     %Player{
