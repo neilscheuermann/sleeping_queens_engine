@@ -21,7 +21,7 @@ defmodule PlayValidatorTest do
          waiting_on_player: :player,
          waiting_on_action: :block_steal_queen,
          cards_in_player_hand: [:dragon]
-    test "returns success with no next move when checking a dragon to protect a queen from being stolen",
+    test "returns success with no next action when checking a dragon to protect a queen from being stolen",
          %{
            player: player,
            rules: rules,
@@ -29,7 +29,7 @@ defmodule PlayValidatorTest do
          } do
       card_position = 1
 
-      assert {:ok, nil = _next_move} =
+      assert {:ok, nil = _next_action} =
                PlayValidator.check(
                  :play,
                  player.position,
@@ -51,7 +51,7 @@ defmodule PlayValidatorTest do
          } do
       card_position = 1
 
-      assert {:ok, nil = _next_move} =
+      assert {:ok, nil = _next_action} =
                PlayValidator.check(
                  :play,
                  player.position,
@@ -222,40 +222,96 @@ defmodule PlayValidatorTest do
     end
   end
 
-  # # when it's player's turn checking to dicard one or more cards
-  # describe "check/5 :play discard, when it's the player's turn," do
-  #   setup do
-  #     rules =
-  #       Rules.new()
-  #       |> Map.replace(:state, :playing)
-  #       |> Map.replace(:player_count, 2)
-  #
-  #     %{rules: rules}
-  #   end
-  #
-  #   test "successfully returns nil for waiting_on when discarding a single card of any type",
-  #        %{
-  #          rules: rules
-  #        } do
-  #   end
-  #
-  #   test "successfully returns nil for waiting_on when discarding 2 matching numbers",
-  #        %{
-  #          rules: rules
-  #        } do
-  #   end
-  #
-  #   test "successfully returns nil for waiting_on when discarding 3 or more numbers that make a valid addition equation",
-  #        %{
-  #          rules: rules
-  #        } do
-  #   end
-  #
-  #   test "errors when trying to discard 2 matching non-numbers", %{
-  #     rules: rules
-  #   } do
-  #   end
-  # end
+  # when it's player's turn checking to dicard one or more cards
+  describe "check/5 :discard, when it's the player's turn," do
+    setup [
+      :setup_game_table,
+      :setup_rules_state,
+      :setup_cards_in_player_hand,
+      :setup_player_turn,
+      :setup_waiting_on
+    ]
+
+    # TODO>>>> Could be a good place to implement a property test where I test player playing every other card in the deck to protect the queen
+    @tag player_turn: :player,
+         cards_in_player_hand: [:king]
+    test "successfully returns nil for next_action when checking to discard a single card of any type",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_position = 1
+
+      assert {:ok, nil = _next_action} =
+               PlayValidator.check(
+                 :discard,
+                 player_position,
+                 [card_position],
+                 rules,
+                 table
+               )
+    end
+
+    # test "successfully returns nil for next_action when checking to discard 2 matching numbers",
+    #      %{
+    #        player: %{position: player_position},
+    #        rules: rules,
+    #        table: table
+    #      } do
+    # end
+    #
+    # test "returns error when checking to discard 2 non-matching numbers",
+    #      %{
+    #        player: %{position: player_position},
+    #        rules: rules,
+    #        table: table
+    #      } do
+    # end
+    #
+    # test "successfully returns nil for next_action when discarding 3 numbers that make a valid addition equation",
+    #      %{
+    #        rules: rules
+    #      } do
+    # end
+    #
+    # test "successfully returns nil for next_action when discarding 4 numbers that make a valid addition equation",
+    #      %{
+    #        rules: rules
+    #      } do
+    # end
+    #
+    # test "successfully returns nil for next_action when discarding 5 numbers that make a valid addition equation",
+    #      %{
+    #        rules: rules
+    #      } do
+    # end
+    #
+    # test "errors when trying to discard 3 number cards that make a valid addition equation", %{
+    #   rules: rules
+    # } do
+    # end
+    #
+    # test "errors when trying to discard 4 number cards that make a valid addition equation", %{
+    #   rules: rules
+    # } do
+    # end
+    #
+    # test "errors when trying to discard 5 number cards that make a valid addition equation", %{
+    #   rules: rules
+    # } do
+    # end
+    #
+    # test "errors when trying to discard 2 matching action cards", %{
+    #   rules: rules
+    # } do
+    # end
+    #
+    # test "errors when trying to discard one number card and one matching action card", %{
+    #   rules: rules
+    # } do
+    # end
+  end
 
   ###
   # Private Functions
