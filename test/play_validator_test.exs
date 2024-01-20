@@ -128,7 +128,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [:king]
-    test "successfully prompts current player to select queen when playing a king",
+    test "successfully prompts current player to select queen when checking to play a king",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -150,58 +150,95 @@ defmodule PlayValidatorTest do
                )
     end
 
-    #   test "successfully prompts current player to select a card for jester when playing a jester",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
+    @tag player_turn: :player,
+         cards_in_player_hand: [:jester]
+    test "successfully prompts current player to select a card when checking to play a jester",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_position = 1
+
+      assert {:ok,
+              %{
+                action: :draw_for_jester,
+                player_position: ^player_position
+              }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 [card_position],
+                 rules,
+                 table
+               )
+    end
+
+    # @tag player_turn: :player,
+    #      cards_in_player_hand: [:knight]
+    # test "successfully prompts opposing player to protect their queen when checking to play a knight",
+    #      %{
+    #        opponent: %{position: opponent_position},
+    #        player: %{position: player_position},
+    #        rules: rules,
+    #        table: table
+    #      } do
+    #   card_position = 1
     #
-    #   test "successfully prompts opposing player to protect their queen when playing a knight",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
-    #
-    #   test "successfully prompts opposing player to protect their queen when playing a sleeping potion",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
+    #   assert {:ok,
+    #           %{
+    #             action: :block_steal_queen,
+    #             player_position: ^opponent_position
+    #           }} =
+    #            PlayValidator.check(
+    #              :play,
+    #              player_position,
+    #              [card_position],
+    #              rules,
+    #              table
+    #            )
     # end
     #
-    # describe "check/5 :discard, when it's the player's turn," do
-    #   setup do
-    #     rules =
-    #       Rules.new()
-    #       |> Map.replace(:state, :playing)
-    #       |> Map.replace(:player_count, 2)
-    #
-    #     %{rules: rules}
-    #   end
-    #
-    #   test "successfully returns nil for waiting_on when discarding a single card of any type",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
-    #
-    #   test "successfully returns nil for waiting_on when discarding 2 matching numbers",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
-    #
-    #   test "successfully returns nil for waiting_on when discarding 3 or more numbers that make a valid addition equation",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
-    #
-    #   test "errors when trying to discard 2 matching non-numbers", %{
-    #     rules: rules
-    #   } do
-    #   end
+    # test "successfully prompts opposing player to protect their queen when checking to play a sleeping potion",
+    #      %{
+    #        rules: rules
+    #      } do
+    # end
   end
+
+  # describe "check/5 :discard, when it's the player's turn," do
+  #   setup do
+  #     rules =
+  #       Rules.new()
+  #       |> Map.replace(:state, :playing)
+  #       |> Map.replace(:player_count, 2)
+  #
+  #     %{rules: rules}
+  #   end
+  #
+  #   test "successfully returns nil for waiting_on when discarding a single card of any type",
+  #        %{
+  #          rules: rules
+  #        } do
+  #   end
+  #
+  #   test "successfully returns nil for waiting_on when discarding 2 matching numbers",
+  #        %{
+  #          rules: rules
+  #        } do
+  #   end
+  #
+  #   test "successfully returns nil for waiting_on when discarding 3 or more numbers that make a valid addition equation",
+  #        %{
+  #          rules: rules
+  #        } do
+  #   end
+  #
+  #   test "errors when trying to discard 2 matching non-numbers", %{
+  #     rules: rules
+  #   } do
+  #   end
+  # end
 
   ###
   # Private Functions
