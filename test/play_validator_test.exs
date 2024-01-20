@@ -115,8 +115,7 @@ defmodule PlayValidatorTest do
     # end
   end
 
-  # TODO>>>> Finish all these 👇👇👇
-  # when it's the player's turn (ex: king, jester, knight, or sleeping potion)
+  # when it's the player's turn checking to play action card (ex: king, jester, knight, or sleeping potion)
   describe "check/5 :play, when is player's turn" do
     setup [
       :setup_game_table,
@@ -174,39 +173,57 @@ defmodule PlayValidatorTest do
                )
     end
 
-    # @tag player_turn: :player,
-    #      cards_in_player_hand: [:knight]
-    # test "successfully prompts opposing player to protect their queen when checking to play a knight",
-    #      %{
-    #        opponent: %{position: opponent_position},
-    #        player: %{position: player_position},
-    #        rules: rules,
-    #        table: table
-    #      } do
-    #   card_position = 1
-    #
-    #   assert {:ok,
-    #           %{
-    #             action: :block_steal_queen,
-    #             player_position: ^opponent_position
-    #           }} =
-    #            PlayValidator.check(
-    #              :play,
-    #              player_position,
-    #              [card_position],
-    #              rules,
-    #              table
-    #            )
-    # end
-    #
-    # test "successfully prompts opposing player to protect their queen when checking to play a sleeping potion",
-    #      %{
-    #        rules: rules
-    #      } do
-    # end
+    @tag player_turn: :player,
+         cards_in_player_hand: [:knight]
+    test "successfully prompts currrent player to choose queen to steal when checking to play a knight",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_position = 1
+
+      assert {:ok,
+              %{
+                action: :choose_queen_to_steal,
+                player_position: ^player_position
+              }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 [card_position],
+                 rules,
+                 table
+               )
+    end
+
+    @tag player_turn: :player,
+         cards_in_player_hand: [:sleeping_potion]
+    test "successfully prompts current player to choose queen to place back on board when checking to play a sleeping potion",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_position = 1
+
+      assert {:ok,
+              %{
+                action: :choose_queen_to_place_back_on_board,
+                player_position: ^player_position
+              }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 [card_position],
+                 rules,
+                 table
+               )
+    end
   end
 
-  # describe "check/5 :discard, when it's the player's turn," do
+  # # when it's player's turn checking to dicard one or more cards
+  # describe "check/5 :play discard, when it's the player's turn," do
   #   setup do
   #     rules =
   #       Rules.new()
