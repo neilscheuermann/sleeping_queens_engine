@@ -8,7 +8,7 @@ defmodule PlayValidatorTest do
   alias SleepingQueensEngine.Table
 
   # when it's waiting on player (ex: have a dragon or wand to protect a queen?)
-  describe "check/5 :play" do
+  describe "check/5 :play, when waiting on player" do
     setup [
       :setup_game_table,
       :setup_rules_state,
@@ -117,22 +117,39 @@ defmodule PlayValidatorTest do
 
   # TODO>>>> Finish all these 👇👇👇
   # when it's the player's turn (ex: king, jester, knight, or sleeping potion)
-  describe "check/5 :play, " do
-    #   setup do
-    #     rules =
-    #       Rules.new()
-    #       |> Map.replace(:state, :playing)
-    #       |> Map.replace(:player_count, 2)
-    #
-    #     %{rules: rules}
-    #   end
-    #
-    #   test "successfully prompts current player to select queen when playing a king",
-    #        %{
-    #          rules: rules
-    #        } do
-    #   end
-    #
+  describe "check/5 :play, when is player's turn" do
+    setup [
+      :setup_game_table,
+      :setup_rules_state,
+      :setup_cards_in_player_hand,
+      :setup_player_turn,
+      :setup_waiting_on
+    ]
+
+    @tag player_turn: :player,
+         cards_in_player_hand: [:king]
+    test "successfully prompts current player to select queen when playing a king",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_position = 1
+
+      assert {:ok,
+              %{
+                action: :select_queen,
+                player_position: ^player_position
+              }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 [card_position],
+                 rules,
+                 table
+               )
+    end
+
     #   test "successfully prompts current player to select a card for jester when playing a jester",
     #        %{
     #          rules: rules
