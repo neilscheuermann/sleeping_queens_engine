@@ -17,7 +17,7 @@ defmodule GameTest do
     end
   end
 
-  describe "add_player" do
+  describe "add_player/2" do
     test "can add max of 5 players" do
       assert {:ok, pid} = SleepingQueensEngine.Game.start_link("player1")
 
@@ -35,6 +35,16 @@ defmodule GameTest do
           SleepingQueensEngine.Game.start_link(non_string_type)
         end
       end
+    end
+  end
+
+  describe "start_game/1" do
+    test "can start game with minimum of 2 players" do
+      assert {:ok, pid} = SleepingQueensEngine.Game.start_link("player1")
+      assert :error = SleepingQueensEngine.Game.start_game(pid)
+
+      assert :ok = SleepingQueensEngine.Game.add_player(pid, "player2")
+      assert :ok = SleepingQueensEngine.Game.start_game(pid)
     end
   end
 end
