@@ -355,7 +355,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 10]
-    test "errors when checking to discard 3 number cards that do not make a valid addition equation", 
+    test "errors when checking to discard 3 number cards that do not make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -375,7 +375,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 1, 10]
-    test "errors when checking to discard 4 number cards that make a valid addition equation", 
+    test "errors when checking to discard 4 number cards that make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -395,7 +395,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 1, 1, 10]
-    test "errors when checking to discard 5 number cards that make a valid addition equation", 
+    test "errors when checking to discard 5 number cards that make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -415,7 +415,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [:wand, :wand]
-    test "errors when checking to discard 2 matching action cards", 
+    test "errors when checking to discard 2 matching action cards",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -435,7 +435,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, :wand]
-    test "errors when checking to discard one number card and one action card", 
+    test "errors when checking to discard one number card and one action card",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -452,9 +452,10 @@ defmodule PlayValidatorTest do
                  table
                )
     end
+
     @tag player_turn: :player,
          cards_in_player_hand: [1, 3, :wand, :jester]
-    test "errors when checking to discard multiple number and action cards", 
+    test "errors when checking to discard multiple number and action cards",
          %{
            player: %{position: player_position},
            rules: rules,

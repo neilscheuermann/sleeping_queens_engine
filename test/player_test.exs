@@ -14,17 +14,28 @@ defmodule PlayerTest do
     %{player: player}
   end
 
-  test "selected_enough_cards? guard" do
+  describe "selected_enough_cards?/1 defguard" do
     require Player
 
-    assert Player.selected_enough_cards?([1])
-    assert Player.selected_enough_cards?([1, 2])
-    assert Player.selected_enough_cards?([1, 2, 3])
-    assert Player.selected_enough_cards?([1, 2, 3, 4])
-    assert Player.selected_enough_cards?([1, 2, 3, 4, 5])
+    test "succeeds when is one card up to max number of cards allowed in hand" do
+      valid_cases =
+        for n <- 1..@max_allowed_cards_in_hand, do: Enum.to_list(1..n)
 
-    refute Player.selected_enough_cards?([])
-    refute Player.selected_enough_cards?([1, 2, 3, 4, 5, 6])
+      Enum.each(valid_cases, fn cards ->
+        assert Player.selected_enough_cards?(cards)
+      end)
+    end
+
+    test "fails when none are selected or more than allowed" do
+      invalid_cases = [
+        [],
+        Enum.to_list(1..(@max_allowed_cards_in_hand + 1))
+      ]
+
+      Enum.each(invalid_cases, fn cards ->
+        refute Player.selected_enough_cards?(cards)
+      end)
+    end
   end
 
   describe "new/1" do
