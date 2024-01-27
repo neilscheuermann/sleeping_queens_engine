@@ -7,16 +7,10 @@ defmodule GameTest do
     end
 
     test "raises exception if name is not a string" do
-      assert_raise FunctionClauseError, fn ->
-        SleepingQueensEngine.Game.start_link(:name)
-      end
-
-      assert_raise FunctionClauseError, fn ->
-        SleepingQueensEngine.Game.start_link(7)
-      end
-
-      assert_raise FunctionClauseError, fn ->
-        SleepingQueensEngine.Game.start_link(nil)
+      for non_string_type <- [:name, 7, nil, 'name'] do
+        assert_raise FunctionClauseError, fn ->
+          SleepingQueensEngine.Game.start_link(non_string_type)
+        end
       end
     end
   end
