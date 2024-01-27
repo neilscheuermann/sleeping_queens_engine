@@ -16,6 +16,30 @@ defmodule TableTest do
   @invalid_queen_coordinate {10, 10}
   @invalid_queen_position 20
 
+  describe "selected_enough_cards?/1 defguard" do
+    require Table
+
+    test "succeeds when is one card up to max number of cards allowed in hand" do
+      valid_cases =
+        for n <- 1..@max_allowed_cards_in_hand, do: Enum.to_list(1..n)
+
+      Enum.each(valid_cases, fn cards ->
+        assert Table.selected_enough_cards?(cards)
+      end)
+    end
+
+    test "fails when none are selected or more than allowed" do
+      invalid_cases = [
+        [],
+        Enum.to_list(1..(@max_allowed_cards_in_hand + 1))
+      ]
+
+      Enum.each(invalid_cases, fn cards ->
+        refute Table.selected_enough_cards?(cards)
+      end)
+    end
+  end
+
   describe "new/1" do
     test "returns a table with required fields and assigns positions when given a list of players" do
       player1 = Player.new("Ron")
