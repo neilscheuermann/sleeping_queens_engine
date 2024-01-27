@@ -9,12 +9,32 @@ _[TODO>>>>: Select which rulebook to follow. 12 or 16 queens, but the rest is
 the same.]_
 
 - [Sleeping Queens rules](https://gamewright.com/pdfs/Rules/SleepingQueensTM-RULES.pdf)
-- [Sleeping Queens rules (new)](https://gamewright.com/pdfs/Rules/Sleeping-Queens-Rules.pdf)
+- [Sleeping Queens rules (Deluxe)](https://gamewright.com/pdfs/Rules/Sleeping-Queens-Rules.pdf)
 
 ## Testing game actions and rule checks
 
 Can test gameplay from an interactive Elixir shell (`iex -S mix`) to run the
 following commands.
+
+### Game interface
+
+```elixir
+alias SleepingQueensEngine.Game
+
+# new game
+{:ok, game} = Game.start_link("Tammy1")
+
+:sys.get_state(game)
+
+Game.add_player(game, "Tammy2")
+Game.start_game(game)
+
+# deal cards
+Game.deal_cards(game)
+
+# play cards
+Game.play_cards(game, player_position, card_positions)
+```
 
 ### Game actions
 
