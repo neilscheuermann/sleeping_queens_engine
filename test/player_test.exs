@@ -14,6 +14,19 @@ defmodule PlayerTest do
     %{player: player}
   end
 
+  test "selected_enough_cards? guard" do
+    require Player
+
+    assert Player.selected_enough_cards?([1])
+    assert Player.selected_enough_cards?([1, 2])
+    assert Player.selected_enough_cards?([1, 2, 3])
+    assert Player.selected_enough_cards?([1, 2, 3, 4])
+    assert Player.selected_enough_cards?([1, 2, 3, 4, 5])
+
+    refute Player.selected_enough_cards?([])
+    refute Player.selected_enough_cards?([1, 2, 3, 4, 5, 6])
+  end
+
   describe "new/1" do
     test "returns a player with required fields when given a name" do
       name = "Ron"
