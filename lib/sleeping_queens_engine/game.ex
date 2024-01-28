@@ -5,12 +5,17 @@ defmodule SleepingQueensEngine.Game do
   alias SleepingQueensEngine.Table
   alias SleepingQueensEngine.Player
 
+  @doc """
+  Names a process using the "via" tuple for inserting and finding processes from the Registry
+  """
+  def via_tuple(name), do: {:via, Registry, {Registry.Game, name}}
+
   ###
   # Client Functions
   #
 
   def start_link(name) when is_binary(name),
-    do: GenServer.start_link(__MODULE__, name, [])
+    do: GenServer.start_link(__MODULE__, name, name: via_tuple(name))
 
   def add_player(game, name) when is_binary(name),
     do: GenServer.call(game, {:add_player, name})
@@ -34,13 +39,14 @@ defmodule SleepingQueensEngine.Game do
 
   @impl GenServer
   def init(name) do
-    table =
-      name
-      |> Player.new()
-      |> List.wrap()
-      |> Table.new()
+    first_player = Player.new(name)
 
-    {:ok, %{table: table, rules: Rules.new()}}
+    initial_state = %{
+      table: Table.new([first_player]),
+      rules: Rules.new()
+    }
+
+    {:ok, initial_state}
   end
 
   @impl GenServer

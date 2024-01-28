@@ -8,6 +8,7 @@ defmodule SleepingQueensEngine.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Registry, keys: :unique, name: Registry.Game}
       # Starts a worker by calling: SleepingQueensEngine.Worker.start_link(arg)
       # {SleepingQueensEngine.Worker, arg}
     ]
