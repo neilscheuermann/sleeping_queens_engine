@@ -1,21 +1,24 @@
 defmodule SleepingQueensEngine.Game do
-  use GenServer
+  use GenServer, start: {__MODULE__, :start_link, []}, restart: :transient
 
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
   alias SleepingQueensEngine.Player
 
+  # 1 day
+  @timeout 60 * 60 * 24 * 1000
+
   @doc """
   Names a process using the "via" tuple for inserting and finding processes from the Registry
   """
-  def via_tuple(name), do: {:via, Registry, {Registry.Game, name}}
+  def via_tuple(game_id), do: {:via, Registry, {Registry.Game, game_id}}
 
   ###
   # Client Functions
   #
 
-  def start_link(name) when is_binary(name),
-    do: GenServer.start_link(__MODULE__, name, name: via_tuple(name))
+  def start_link(game_id) when is_binary(game_id),
+    do: GenServer.start_link(__MODULE__, game_id, name: via_tuple(game_id))
 
   def add_player(game, name) when is_binary(name),
     do: GenServer.call(game, {:add_player, name})
@@ -46,7 +49,7 @@ defmodule SleepingQueensEngine.Game do
       rules: Rules.new()
     }
 
-    {:ok, initial_state}
+    {:ok, initial_state, @timeout}
   end
 
   @impl GenServer
@@ -59,9 +62,9 @@ defmodule SleepingQueensEngine.Game do
       state
       |> update_table(table)
       |> update_rules(rules)
-      |> reply_success(:ok)
+      |> reply(:ok)
     else
-      :error -> {:reply, :error, state}
+      :error -> reply(state, :error)
     end
   end
 
@@ -70,10 +73,15 @@ defmodule SleepingQueensEngine.Game do
     with {:ok, rules} <- Rules.check(state.rules, :start_game) do
       state
       |> update_rules(rules)
-      |> reply_success(:ok)
+      |> reply(:ok)
     else
-      :error -> {:reply, :error, state}
+      :error -> reply(state, :error)
     end
+  end
+
+  @impl GenServer
+  def handle_info(:timeout, state) do
+    {:stop, {:shutdown, :timeout}, state}
   end
 
   # @impl GenServer
@@ -83,9 +91,9 @@ defmodule SleepingQueensEngine.Game do
   #     state
   #     |> update_rules(rules)
   #     |> update_table(table)
-  #     |> reply_success(:ok)
+  #     |> reply(:ok)
   #   else
-  #     :error -> {:reply, :error, state}
+  #     :error -> reply(state, :error)
   #   end
   # end
   #
@@ -102,9 +110,9 @@ defmodule SleepingQueensEngine.Game do
   #            player_position,
   #            card_positions
   #          ) do
-  #     reply_success(state, {:ok, next_action})
+  #     reply(state, {:ok, next_action})
   #   else
-  #     {:error, error} -> {:reply, {:error, error}, state}
+      # {:error, error} -> reply(state, {:error, error})
   #   end
   # end
   #
@@ -129,9 +137,9 @@ defmodule SleepingQueensEngine.Game do
   #     state
   #     |> update_rules(rules)
   #     |> update_table(table)
-  #     |> reply_success(:ok)
+  #     |> reply(:ok)
   #   else
-  #     :error -> {:reply, :error, state}
+  #     :error -> reply(state, :error)
   #   end
   # end
 
@@ -140,5 +148,5 @@ defmodule SleepingQueensEngine.Game do
   #
   defp update_table(state, table), do: put_in(state.table, table)
   defp update_rules(state, rules), do: put_in(state.rules, rules)
-  defp reply_success(state, reply), do: {:reply, reply, state}
+  defp reply(state, reply), do: {:reply, reply, state, @timeout}
 end
