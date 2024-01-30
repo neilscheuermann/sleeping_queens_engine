@@ -16,6 +16,55 @@ the same.]_
 Can test gameplay from an interactive Elixir shell (`iex -S mix`) to run the
 following commands.
 
+### Game Process Supervision
+
+```elixir
+alias SleepingQueensEngine.{Game, GameSupervisor}
+
+# Create new game using the Supervisor so it can be restarted according to child specs.
+# Game process is named in GenServer.start_link using &via_tuple/1 to register itself.
+{:ok, game} = GameSupervisor.start_game("ABCD")
+# used to find the game in the process Registry
+via = Game.via_tuple("ABCD")
+
+# can list the number of Game processes being supervised
+Supervisor.count_children(GameSupervisor)
+# can list which Game processes are being supervised
+Supervisor.which_children(GameSupervisor)
+
+# true and pid
+Process.alive?(game)
+GenServer.whereis(via)
+
+Process.exit(game, :kaboom)
+
+# false but new pid because supervisor restarted it
+Process.alive?(game)
+GenServer.whereis(via)
+
+GameSupervisor.stop_game("ABCD")
+# false and nil
+Process.alive?(game)
+GenServer.whereis(via)
+# 
+```
+
+### Game Process Registration
+
+```elixir
+alias SleepingQueensEngine.Game
+
+# Name used by process Registry to register and find processes
+via = Game.via_tuple("Lena")
+
+# Can test manually starting a game passing the name and named via tuple
+GenServer.start_link(Game, "Lena", name: via)
+# and now use the via rather than the pid to reference the process
+:sys.get_state(via)
+# This will ERROR because there can't be 2 processes with the same name
+GenServer.start_link(Game, "Lena", name: via)
+```
+
 ### Game interface
 
 ```elixir

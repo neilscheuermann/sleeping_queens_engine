@@ -112,7 +112,7 @@ defmodule SleepingQueensEngine.Game do
   #          ) do
   #     reply(state, {:ok, next_action})
   #   else
-      # {:error, error} -> reply(state, {:error, error})
+  # {:error, error} -> reply(state, {:error, error})
   #   end
   # end
   #

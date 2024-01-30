@@ -20,7 +20,7 @@ defmodule SleepingQueensEngine.GameSupervisor do
   def start_game(game_id),
     do: Supervisor.start_child(__MODULE__, [game_id])
 
-  def stop_game(game_id), 
+  def stop_game(game_id),
     do: Supervisor.terminate_child(__MODULE__, pid_from_id(game_id))
 
   defp pid_from_id(game_id) do
