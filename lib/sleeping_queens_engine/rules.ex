@@ -22,7 +22,7 @@ defmodule SleepingQueensEngine.Rules do
           action: waiting_on_actions()
         }
   defstruct state: :initialized,
-            player_count: 1,
+            player_count: 0,
             player_turn: 1,
             waiting_on: nil
 
@@ -37,7 +37,7 @@ defmodule SleepingQueensEngine.Rules do
         %Rules{state: :initialized, player_count: player_count} = rules,
         :add_player
       )
-      when player_count in 1..(@max_allowed_players - 1) do
+      when player_count in 0..(@max_allowed_players - 1) do
     {:ok, %Rules{rules | player_count: player_count + 1}}
   end
 

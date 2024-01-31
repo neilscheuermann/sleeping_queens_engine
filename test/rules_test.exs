@@ -12,7 +12,7 @@ defmodule RulesTest do
 
       assert %Rules{
                state: :initialized,
-               player_count: 1,
+               player_count: 0,
                player_turn: 1
              } = rules
     end
@@ -28,9 +28,9 @@ defmodule RulesTest do
     test ":add_player successfully increments :player_count by 1", %{
       rules: rules
     } do
-      assert rules.player_count == 1
+      assert rules.player_count == 0
       assert {:ok, rules} = Rules.check(rules, :add_player)
-      assert rules.player_count == 2
+      assert rules.player_count == 1
     end
 
     test ":add_player errors when player_count is at max limit", %{rules: rules} do

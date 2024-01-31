@@ -19,9 +19,9 @@ defmodule GameTest do
 
   describe "add_player/2" do
     test "can add max of 5 players" do
-      assert {:ok, pid} = SleepingQueensEngine.Game.start_link("player1")
+      assert {:ok, pid} = SleepingQueensEngine.Game.start_link("game_id")
 
-      for n <- 2..@max_allowed_players do
+      for n <- 1..@max_allowed_players do
         player = "player#{n}"
         assert :ok = SleepingQueensEngine.Game.add_player(pid, player)
       end
@@ -40,7 +40,8 @@ defmodule GameTest do
 
   describe "start_game/1" do
     test "can start game with minimum of 2 players" do
-      assert {:ok, pid} = SleepingQueensEngine.Game.start_link("player1")
+      assert {:ok, pid} = SleepingQueensEngine.Game.start_link("game_id")
+      assert :ok = SleepingQueensEngine.Game.add_player(pid, "player1")
       assert :error = SleepingQueensEngine.Game.start_game(pid)
 
       assert :ok = SleepingQueensEngine.Game.add_player(pid, "player2")

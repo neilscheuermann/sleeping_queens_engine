@@ -26,6 +26,9 @@ defmodule SleepingQueensEngine.Game do
   def start_game(game),
     do: GenServer.call(game, :start_game)
 
+  def get_state(game),
+    do: GenServer.call(game, :get_state)
+
   # def deal_cards(game),
   #   do: GenServer.call(game, :deal_cards)
   #
@@ -41,11 +44,12 @@ defmodule SleepingQueensEngine.Game do
   #
 
   @impl GenServer
-  def init(name) do
-    first_player = Player.new(name)
+  def init(game_id) do
+    players = []
 
     initial_state = %{
-      table: Table.new([first_player]),
+      game_id: game_id,
+      table: Table.new(players),
       rules: Rules.new()
     }
 
@@ -67,6 +71,9 @@ defmodule SleepingQueensEngine.Game do
       :error -> reply(state, :error)
     end
   end
+
+  @impl GenServer
+  def handle_call(:get_state, _from, state), do: reply(state, {:ok, state})
 
   @impl GenServer
   def handle_call(:start_game, _from, state) do
