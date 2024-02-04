@@ -1,13 +1,10 @@
 defmodule SleepingQueensEngine.QueenCard do
-  alias SleepingQueensEngine.QueenCoordinate
   alias __MODULE__
 
   @type t() :: %__MODULE__{
           name: String.t(),
           value: pos_integer(),
           special?: boolean(),
-          # TODO>>>> Maybe remove?
-          coordinate: QueenCoordinate.t()
         }
   @enforce_keys [:name, :value, :special?]
   defstruct [:name, :value, :special?, :coordinate]
