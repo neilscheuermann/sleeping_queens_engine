@@ -76,6 +76,10 @@ alias SleepingQueensEngine.Game
 :sys.get_state(game)
 
 Game.add_player(game, "Tammy2")
+Game.add_player(game, "Tammy3")
+Game.add_player(game, "Tammy4")
+Game.add_player(game, "Tammy5")
+Game.add_player(game, "will return :error")
 Game.start_game(game)
 
 # deal cards
