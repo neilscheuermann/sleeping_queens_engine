@@ -4,7 +4,7 @@ defmodule SleepingQueensEngine.QueenCard do
   @type t() :: %__MODULE__{
           name: String.t(),
           value: pos_integer(),
-          special?: boolean(),
+          special?: boolean()
         }
   @enforce_keys [:name, :value, :special?]
   defstruct [:name, :value, :special?, :coordinate]

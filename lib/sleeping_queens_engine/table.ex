@@ -100,7 +100,7 @@ defmodule SleepingQueensEngine.Table do
 
           {:cont,
            {updated_table_acc,
-            get_next_player_position(table_acc, player_position_to_deal)}}
+            get_next_player_position(updated_table_acc, player_position_to_deal)}}
         end
       end
     )
@@ -269,7 +269,9 @@ defmodule SleepingQueensEngine.Table do
          ) do
       next_higher_player.position
     else
-      List.first(players_needing_cards).position
+      players_needing_cards
+      |> List.first(%{})
+      |> Map.get(:position)
     end
   end
 
@@ -285,7 +287,8 @@ defmodule SleepingQueensEngine.Table do
 
   defp give_card_to_player(players, card, player_needing_card) do
     Enum.map(players, fn player ->
-      if player.name == player_needing_card.name do
+      if player.name == player_needing_card.name and
+           length(player_needing_card.hand) < @max_allowed_cards_in_hand do
         Player.add_cards_to_hand(player, [card])
       else
         player
