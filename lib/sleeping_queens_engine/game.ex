@@ -1,5 +1,5 @@
 defmodule SleepingQueensEngine.Game do
-  use GenServer, start: {__MODULE__, :start_link, []}, restart: :transient
+  use GenServer
 
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
