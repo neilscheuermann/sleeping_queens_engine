@@ -6,19 +6,20 @@ defmodule GameTest do
   @max_allowed_players 5
 
   describe "initialization" do
-    test "accepts a string name on start" do
+    test "accepts a string game_id on start" do
       game_id = "ABCD"
       {:ok, _pid} = start_supervised({Game, game_id})
     end
 
-    # TODO>>>> Update to account for start_supervised
-    # test "raises exception if name is not a string" do
-    #   for non_string_type <- [:name, 7, nil, 'name'] do
-    #     assert_raise FunctionClauseError, fn ->
-    #       start_supervised({Game, non_string_type}) |> IO.inspect(label: ">>>>")
-    #     end
-    #   end
-    # end
+    # Must call `start_link` directly to assert a raised FunctionClauseError
+    # since `start_supervised` returns an error tuple when initialization fails
+    test "raises exception if name is not a string" do
+      for non_string_type <- [:game_id, 0, nil, 'game_id'] do
+        assert_raise FunctionClauseError, fn ->
+          Game.start_link(non_string_type)
+        end
+      end
+    end
   end
 
   describe "add_player/2" do
@@ -34,9 +35,11 @@ defmodule GameTest do
     end
 
     test "raises exception if name is not a string" do
-      for non_string_type <- [:name, 7, nil, 'name'] do
+      pid = start_supervised!({Game, "game_id"})
+
+      for non_string_type <- [:name, 0, nil, 'name'] do
         assert_raise FunctionClauseError, fn ->
-          SleepingQueensEngine.Game.start_link(non_string_type)
+          Game.add_player(pid, non_string_type)
         end
       end
     end
