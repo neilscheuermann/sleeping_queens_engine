@@ -46,14 +46,32 @@ defmodule GameTest do
   end
 
   describe "start_game/1" do
-    test "can start game with minimum of 2 players" do
+    test "successfully starts game with minimum of 2 players" do
       pid = start_supervised!({Game, "game_id"})
 
-      assert :ok = Game.add_player(pid, "player1")
+      Game.add_player(pid, "player1")
       assert :error = Game.start_game(pid)
 
-      assert :ok = Game.add_player(pid, "player2")
+      Game.add_player(pid, "player2")
       assert :ok = Game.start_game(pid)
+    end
+  end
+
+  describe "deal_cards/1" do
+    test "returns error if game has not started" do
+      pid = start_supervised!({Game, "game_id"})
+
+      assert :error = Game.deal_cards(pid)
+    end
+
+    test "successfully deals cards if game has started" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      assert :ok = Game.deal_cards(pid)
     end
   end
 end
