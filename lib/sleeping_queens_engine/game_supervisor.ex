@@ -13,7 +13,12 @@ defmodule SleepingQueensEngine.GameSupervisor do
     do: DynamicSupervisor.start_link(__MODULE__, :ok, name: __MODULE__)
 
   def start_game(game_id) do
-    spec = %{id: Game, start: {Game, :start_link, [game_id]}, restart: :transient}
+    spec = %{
+      id: Game,
+      start: {Game, :start_link, [game_id]},
+      restart: :transient
+    }
+
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
 
