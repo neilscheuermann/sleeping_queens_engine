@@ -2,6 +2,8 @@ defmodule GameTest do
   use ExUnit.Case
 
   alias SleepingQueensEngine.Game
+  alias SleepingQueensEngine.Rules
+  alias SleepingQueensEngine.Table
 
   @max_allowed_players 5
 
@@ -72,6 +74,19 @@ defmodule GameTest do
       Game.start_game(pid)
 
       assert :ok = Game.deal_cards(pid)
+    end
+  end
+
+  describe "get_state/1" do
+    test "returns the expected game state" do
+      game_id = "game_id"
+      pid = start_supervised!({Game, game_id})
+
+      assert %{
+               game_id: ^game_id,
+               table: %Table{},
+               rules: %Rules{}
+             } = Game.get_state(pid)
     end
   end
 end

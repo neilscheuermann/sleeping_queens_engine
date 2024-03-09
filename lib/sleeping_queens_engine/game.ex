@@ -20,14 +20,14 @@ defmodule SleepingQueensEngine.Game do
   def start_link(game_id) when is_binary(game_id),
     do: GenServer.start_link(__MODULE__, game_id, name: via_tuple(game_id))
 
+  def get_state(game),
+    do: GenServer.call(game, :get_state)
+
   def add_player(game, name) when is_binary(name),
     do: GenServer.call(game, {:add_player, name})
 
   def start_game(game),
     do: GenServer.call(game, :start_game)
-
-  def get_state(game),
-    do: GenServer.call(game, :get_state)
 
   def deal_cards(game),
     do: GenServer.call(game, :deal_cards)
@@ -43,7 +43,7 @@ defmodule SleepingQueensEngine.Game do
   # Server Callbacks
   #
 
-  @impl GenServer
+  @impl true
   def init(game_id) do
     players = []
 
@@ -56,7 +56,10 @@ defmodule SleepingQueensEngine.Game do
     {:ok, initial_state, @timeout}
   end
 
-  @impl GenServer
+  @impl true
+  def handle_call(:get_state, _from, state), do: reply(state, state)
+
+  @impl true
   def handle_call({:add_player, name}, _from, state) do
     player = Player.new(name)
 
@@ -72,10 +75,7 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
-  @impl GenServer
-  def handle_call(:get_state, _from, state), do: reply(state, {:ok, state})
-
-  @impl GenServer
+  @impl true
   def handle_call(:start_game, _from, state) do
     with {:ok, rules} <- Rules.check(state.rules, :start_game) do
       state
@@ -86,7 +86,7 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
-  @impl GenServer
+  @impl true
   def handle_call(:deal_cards, _from, state) do
     with {:ok, rules} <- Rules.check(state.rules, :deal_cards),
          table <- Table.deal_cards(state.table, state.rules.player_turn) do
@@ -99,12 +99,12 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
-  @impl GenServer
+  @impl true
   def handle_info(:timeout, state) do
     {:stop, {:shutdown, :timeout}, state}
   end
 
-  # @impl GenServer
+  # @impl true
   # def handle_call(
   #       {:can_play_cards?, player_position, card_positions},
   #       _from,
@@ -123,7 +123,7 @@ defmodule SleepingQueensEngine.Game do
   #   end
   # end
   #
-  # @impl GenServer
+  # @impl true
   # def handle_call({:play_cards, player_position, card_positions}, _from, state) do
   #   with {:ok, waiting_on} <-
   #          Table.validate_play(state.table, player_position, card_positions),
