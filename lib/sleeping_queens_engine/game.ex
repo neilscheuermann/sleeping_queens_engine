@@ -77,9 +77,11 @@ defmodule SleepingQueensEngine.Game do
 
   @impl true
   def handle_call(:start_game, _from, state) do
-    with {:ok, rules} <- Rules.check(state.rules, :start_game) do
+    with {:ok, rules} <- Rules.check(state.rules, :start_game),
+         table <- Table.deal_cards(state.table, state.rules.player_turn) do
       state
       |> update_rules(rules)
+      |> update_table(table)
       |> reply(:ok)
     else
       :error -> reply(state, :error)

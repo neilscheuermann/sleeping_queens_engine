@@ -57,6 +57,22 @@ defmodule GameTest do
       Game.add_player(pid, "player2")
       assert :ok = Game.start_game(pid)
     end
+
+    test "deals cards and play starts with player1" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: rules, table: table} = Game.get_state(pid)
+
+      assert rules.player_turn == 1
+
+      for player <- table.players do
+        assert length(player.hand) == 5
+      end
+    end
   end
 
   describe "deal_cards/1" do
