@@ -1,9 +1,10 @@
 defmodule SleepingQueensEngine.Game do
   use GenServer
 
+  alias SleepingQueensEngine.PlayValidator
+  alias SleepingQueensEngine.Player
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
-  alias SleepingQueensEngine.Player
 
   # 1 day
   @timeout 60 * 60 * 24 * 1000
@@ -31,6 +32,13 @@ defmodule SleepingQueensEngine.Game do
 
   def deal_cards(game),
     do: GenServer.call(game, :deal_cards)
+
+  def validate_discard_selection(game, player_position, card_positions),
+    do:
+      GenServer.call(
+        game,
+        {:validate_discard_selection, player_position, card_positions}
+      )
 
   # def can_play_cards?(game, player_position, card_positions),
   #   do:
@@ -99,6 +107,24 @@ defmodule SleepingQueensEngine.Game do
     else
       :error -> reply(state, :error)
     end
+  end
+
+  @impl true
+  def handle_call(
+        {:validate_discard_selection, player_position, card_positions},
+        _from,
+        state
+      ) do
+    resp =
+      PlayValidator.check(
+        :discard,
+        player_position,
+        card_positions,
+        state.rules,
+        state.table
+      )
+
+    reply(state, resp)
   end
 
   @impl true
