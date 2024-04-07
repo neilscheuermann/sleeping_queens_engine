@@ -40,6 +40,9 @@ defmodule SleepingQueensEngine.Game do
         {:validate_discard_selection, player_position, card_positions}
       )
 
+  def discard(game, player_position, card_positions),
+    do: GenServer.call(game, {:discard, player_position, card_positions})
+
   # def can_play_cards?(game, player_position, card_positions),
   #   do:
   #     GenServer.call(game, {:can_play_cards?, player_position, card_positions})
@@ -125,6 +128,33 @@ defmodule SleepingQueensEngine.Game do
       )
 
     reply(state, resp)
+  end
+
+  @impl true
+  def handle_call(
+        {:discard, player_position, card_positions},
+        _from,
+        state
+      ) do
+    with {:ok, nil = _next_action} <-
+           PlayValidator.check(
+             :discard,
+             player_position,
+             card_positions,
+             state.rules,
+             state.table
+           ),
+         {:ok, table} <-
+           Table.discard_cards(state.table, card_positions, player_position),
+         {:ok, rules} <- Rules.check(state.rules, :deal_cards),
+         table <- Table.deal_cards(table, state.rules.player_turn) do
+      state
+      |> update_table(table)
+      |> update_rules(rules)
+      |> reply(:ok)
+    else
+      error -> reply(state, error)
+    end
   end
 
   @impl true

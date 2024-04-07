@@ -6,6 +6,7 @@ defmodule GameTest do
   alias SleepingQueensEngine.Table
 
   @max_allowed_players 5
+  @max_allowed_cards_in_hand 5
 
   describe "initialization" do
     test "accepts a string game_id on start" do
@@ -119,7 +120,7 @@ defmodule GameTest do
       # can always discard a single card
       card_positions = [1]
 
-      assert {:ok, _waiting_on} =
+      assert {:ok, nil = _next_action} =
                Game.validate_discard_selection(
                  pid,
                  player_turn,
@@ -141,12 +142,23 @@ defmodule GameTest do
       # This replaces player1's hand with 2 cards that can't be discarded together
       :sys.replace_state(pid, fn current_state ->
         update_in(current_state.table.players, fn players ->
-          Enum.map(players, fn player -> 
+          Enum.map(players, fn player ->
             if player.position == player_turn do
-              %{player | hand: [
-                %SleepingQueensEngine.Card{type: :number, name: nil, value: 5},
-                %SleepingQueensEngine.Card{type: :knight, name: nil, value: nil}
-              ]}
+              %{
+                player
+                | hand: [
+                    %SleepingQueensEngine.Card{
+                      type: :number,
+                      name: nil,
+                      value: 5
+                    },
+                    %SleepingQueensEngine.Card{
+                      type: :knight,
+                      name: nil,
+                      value: nil
+                    }
+                  ]
+              }
             else
               player
             end
@@ -182,6 +194,101 @@ defmodule GameTest do
                  player_turn + 1,
                  card_positions
                )
+    end
+  end
+
+  describe "discard/3" do
+    test "successfully discards, deals, and advances player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{
+        rules: %{player_turn: player_turn},
+        table: %{discard_pile: discard_pile, draw_pile: draw_pile}
+      } = Game.get_state(pid)
+
+      # can always discard a single card
+      card_positions = [1]
+
+      assert :ok = Game.discard(pid, player_turn, card_positions)
+
+      %{
+        rules: %{player_turn: updated_player_turn},
+        table: %{
+          discard_pile: updated_discard_pile,
+          draw_pile: updated_draw_pile,
+          players: updated_players
+        }
+      } = Game.get_state(pid)
+
+      assert updated_player_turn == player_turn + 1
+      assert length(updated_discard_pile) == length(discard_pile) + 1
+      assert length(updated_draw_pile) == length(draw_pile) - 1
+
+      for player <- updated_players do
+        assert length(player.hand) == @max_allowed_cards_in_hand
+      end
+    end
+
+    test "returns error when it's player's turn but selection is invalid" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      # Shouldn't usually directly udpate a gen server's state without using a public fn,
+      # but this seems the best option to ensure 2 incompatible cards are selected.
+      # This replaces player1's hand with 2 cards that can't be discarded together
+      :sys.replace_state(pid, fn current_state ->
+        update_in(current_state.table.players, fn players ->
+          Enum.map(players, fn player ->
+            if player.position == player_turn do
+              %{
+                player
+                | hand: [
+                    %SleepingQueensEngine.Card{
+                      type: :number,
+                      name: nil,
+                      value: 5
+                    },
+                    %SleepingQueensEngine.Card{
+                      type: :knight,
+                      name: nil,
+                      value: nil
+                    }
+                  ]
+              }
+            else
+              player
+            end
+          end)
+        end)
+      end)
+
+      card_positions = [1, 2]
+
+      assert :error = Game.discard(pid, player_turn, card_positions)
+    end
+
+    test "returns error when selection is valid but it's not player's turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      # can always discard a single card
+      card_positions = [1]
+
+      assert :error = Game.discard(pid, player_turn + 1, card_positions)
     end
   end
 end
