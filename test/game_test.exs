@@ -120,7 +120,7 @@ defmodule GameTest do
       # can always discard a single card
       card_positions = [1]
 
-      assert {:ok, nil = _next_action} =
+      assert {:ok, nil = _waiting_on} =
                Game.validate_discard_selection(
                  pid,
                  player_turn,
@@ -137,34 +137,20 @@ defmodule GameTest do
 
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
-      # Shouldn't usually directly udpate a gen server's state without using a public fn,
-      # but this seems the best option to ensure 2 incompatible cards are selected.
-      # This replaces player1's hand with 2 cards that can't be discarded together
-      :sys.replace_state(pid, fn current_state ->
-        update_in(current_state.table.players, fn players ->
-          Enum.map(players, fn player ->
-            if player.position == player_turn do
-              %{
-                player
-                | hand: [
-                    %SleepingQueensEngine.Card{
-                      type: :number,
-                      name: nil,
-                      value: 5
-                    },
-                    %SleepingQueensEngine.Card{
-                      type: :knight,
-                      name: nil,
-                      value: nil
-                    }
-                  ]
-              }
-            else
-              player
-            end
-          end)
-        end)
-      end)
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :number,
+          name: nil,
+          value: 5
+        },
+        %SleepingQueensEngine.Card{
+          type: :knight,
+          name: nil,
+          value: nil
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
 
       card_positions = [1, 2]
 
@@ -242,34 +228,20 @@ defmodule GameTest do
 
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
-      # Shouldn't usually directly udpate a gen server's state without using a public fn,
-      # but this seems the best option to ensure 2 incompatible cards are selected.
-      # This replaces player1's hand with 2 cards that can't be discarded together
-      :sys.replace_state(pid, fn current_state ->
-        update_in(current_state.table.players, fn players ->
-          Enum.map(players, fn player ->
-            if player.position == player_turn do
-              %{
-                player
-                | hand: [
-                    %SleepingQueensEngine.Card{
-                      type: :number,
-                      name: nil,
-                      value: 5
-                    },
-                    %SleepingQueensEngine.Card{
-                      type: :knight,
-                      name: nil,
-                      value: nil
-                    }
-                  ]
-              }
-            else
-              player
-            end
-          end)
-        end)
-      end)
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :number,
+          name: nil,
+          value: 5
+        },
+        %SleepingQueensEngine.Card{
+          type: :knight,
+          name: nil,
+          value: nil
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
 
       card_positions = [1, 2]
 
@@ -290,5 +262,192 @@ defmodule GameTest do
 
       assert :error = Game.discard(pid, player_turn + 1, card_positions)
     end
+  end
+
+  describe "validate_play_selection/3" do
+    test "returns ok when selection is valid and it's player's turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :king,
+          name: "name1"
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
+
+      card_positions = [1]
+
+      assert {:ok, _waiting_on} =
+               Game.validate_play_selection(
+                 pid,
+                 player_turn,
+                 card_positions
+               )
+    end
+
+    test "returns error when it's player's turn but selection is invalid" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :number,
+          name: nil,
+          value: 5
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
+
+      card_positions = [1]
+
+      assert :error =
+               Game.validate_play_selection(
+                 pid,
+                 player_turn,
+                 card_positions
+               )
+    end
+
+    test "returns error when selection is valid but it's not player's turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :king,
+          name: "name1"
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn + 1, new_hand)
+
+      card_positions = [1]
+
+      assert :error =
+               Game.validate_play_selection(
+                 pid,
+                 player_turn + 1,
+                 card_positions
+               )
+    end
+  end
+
+  describe "play/3" do
+    test "successfully discards and sets waiting_on" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{
+        rules: %{player_turn: player_turn},
+        table: %{discard_pile: discard_pile}
+      } = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :king,
+          name: "name1"
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
+
+      card_positions = [1]
+
+      assert :ok = Game.play(pid, player_turn, card_positions)
+
+      %{
+        rules: %{waiting_on: waiting_on},
+        table: %{discard_pile: updated_discard_pile}
+      } = Game.get_state(pid)
+
+      assert %{action: :select_queen, player_position: 1} = waiting_on
+      assert length(updated_discard_pile) == length(discard_pile) + 1
+    end
+
+    test "returns error when it's player's turn but selection is invalid" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :number,
+          name: nil,
+          value: 5
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn, new_hand)
+
+      card_positions = [1]
+
+      assert :error = Game.play(pid, player_turn, card_positions)
+    end
+
+    test "returns error when selection is valid but it's not player's turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      new_hand = [
+        %SleepingQueensEngine.Card{
+          type: :king,
+          name: "name1"
+        }
+      ]
+
+      replace_player_hand_with(pid, player_turn + 1, new_hand)
+
+      card_positions = [1]
+
+      assert :error = Game.play(pid, player_turn + 1, card_positions)
+    end
+  end
+
+  # Shouldn't usually directly udpate a gen server's state without using a public fn,
+  # but this seems the best option to ensure 2 incompatible cards are selected.
+  # This replaces player1's hand with 2 cards that can't be discarded together
+  defp replace_player_hand_with(pid, player_position, new_hand) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.table.players, fn players ->
+        Enum.map(players, fn player ->
+          if player.position == player_position do
+            %{player | hand: new_hand}
+          else
+            player
+          end
+        end)
+      end)
+    end)
   end
 end

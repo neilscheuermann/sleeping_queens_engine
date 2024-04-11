@@ -128,7 +128,7 @@ defmodule PlayValidatorTest do
          waiting_on_player: :player,
          waiting_on_action: :block_steal_queen,
          cards_in_player_hand: [:dragon]
-    test "returns success with no next action when checking a dragon to protect a queen from being stolen",
+    test "returns success with no waiting_on when checking a dragon to protect a queen from being stolen",
          %{
            player: player,
            rules: rules,
@@ -136,7 +136,7 @@ defmodule PlayValidatorTest do
          } do
       card_positions = [1]
 
-      assert {:ok, nil = _next_action} =
+      assert {:ok, nil = _waiting_on} =
                PlayValidator.check(
                  :play,
                  player.position,
@@ -150,7 +150,7 @@ defmodule PlayValidatorTest do
          waiting_on_player: :player,
          waiting_on_action: :block_place_queen_back_on_board,
          cards_in_player_hand: [:wand]
-    test "returns success with no next move when checking a wand to protect a queen from being placed back on the board",
+    test "returns success with no waiting_on when checking a wand to protect a queen from being placed back on the board",
          %{
            player: player,
            rules: rules,
@@ -158,7 +158,7 @@ defmodule PlayValidatorTest do
          } do
       card_positions = [1]
 
-      assert {:ok, nil = _next_action} =
+      assert {:ok, nil = _waiting_on} =
                PlayValidator.check(
                  :play,
                  player.position,
@@ -235,7 +235,7 @@ defmodule PlayValidatorTest do
     # TODO>>>> Could be a good place to implement a property test where I test player playing every other card in the deck to protect the queen
     @tag player_turn: :player,
          cards_in_player_hand: [:king]
-    test "successfully returns nil for next move when checking to discard a single card of any type",
+    test "successfully returns nil for waiting_on when checking to discard a single card of any type",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -243,7 +243,7 @@ defmodule PlayValidatorTest do
          } do
       card_positions = [1]
 
-      assert {:ok, nil = _next_action} =
+      assert {:ok, nil = _waiting_on} =
                PlayValidator.check(
                  :discard,
                  player_position,
@@ -255,7 +255,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1]
-    test "successfully returns nil for next move when checking to discard 2 matching numbers",
+    test "successfully returns nil for waiting_on when checking to discard 2 matching numbers",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -263,7 +263,7 @@ defmodule PlayValidatorTest do
          } do
       card_positions = [1, 2]
 
-      assert {:ok, nil = _next_action} =
+      assert {:ok, nil = _waiting_on} =
                PlayValidator.check(
                  :discard,
                  player_position,
@@ -295,7 +295,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 2]
-    test "successfully returns nil for next move when checking to discard 3 numbers that make a valid addition equation",
+    test "successfully returns nil for waiting_on when checking to discard 3 numbers that make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -315,7 +315,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 1, 3]
-    test "successfully returns nil for next move when checking to discard 4 numbers that make a valid addition equation",
+    test "successfully returns nil for waiting_on when checking to discard 4 numbers that make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -335,7 +335,7 @@ defmodule PlayValidatorTest do
 
     @tag player_turn: :player,
          cards_in_player_hand: [1, 1, 1, 1, 4]
-    test "successfully returns nil for next move when checking to discard 5 numbers that make a valid addition equation",
+    test "successfully returns nil for waiting_on when checking to discard 5 numbers that make a valid addition equation",
          %{
            player: %{position: player_position},
            rules: rules,

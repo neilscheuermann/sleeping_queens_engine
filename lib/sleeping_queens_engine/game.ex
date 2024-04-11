@@ -43,6 +43,16 @@ defmodule SleepingQueensEngine.Game do
   def discard(game, player_position, card_positions),
     do: GenServer.call(game, {:discard, player_position, card_positions})
 
+  def validate_play_selection(game, player_position, card_positions),
+    do:
+      GenServer.call(
+        game,
+        {:validate_play_selection, player_position, card_positions}
+      )
+
+  def play(game, player_position, card_positions),
+    do: GenServer.call(game, {:play, player_position, card_positions})
+
   # def can_play_cards?(game, player_position, card_positions),
   #   do:
   #     GenServer.call(game, {:can_play_cards?, player_position, card_positions})
@@ -136,7 +146,7 @@ defmodule SleepingQueensEngine.Game do
         _from,
         state
       ) do
-    with {:ok, nil = _next_action} <-
+    with {:ok, nil = _waiting_on} <-
            PlayValidator.check(
              :discard,
              player_position,
@@ -158,55 +168,54 @@ defmodule SleepingQueensEngine.Game do
   end
 
   @impl true
+  def handle_call(
+        {:validate_play_selection, player_position, card_positions},
+        _from,
+        state
+      ) do
+    resp =
+      PlayValidator.check(
+        :play,
+        player_position,
+        card_positions,
+        state.rules,
+        state.table
+      )
+
+    reply(state, resp)
+  end
+
+  @impl true
+  def handle_call(
+        {:play, player_position, card_positions},
+        _from,
+        state
+      ) do
+    with {:ok, waiting_on} <-
+           PlayValidator.check(
+             :play,
+             player_position,
+             card_positions,
+             state.rules,
+             state.table
+           ),
+         {:ok, rules} <-
+           Rules.check(state.rules, {:play, player_position, waiting_on}),
+         {:ok, table} <-
+           Table.discard_cards(state.table, card_positions, player_position) do
+      state
+      |> update_table(table)
+      |> update_rules(rules)
+      |> reply(:ok)
+    else
+      error -> reply(state, error)
+    end
+  end
+
+  @impl true
   def handle_info(:timeout, state) do
     {:stop, {:shutdown, :timeout}, state}
   end
-
-  # @impl true
-  # def handle_call(
-  #       {:can_play_cards?, player_position, card_positions},
-  #       _from,
-  #       state
-  #     ) do
-  #   with {:ok, next_action} <-
-  #          Rules.validate_play(
-  #            state.rules,
-  #            state.table,
-  #            player_position,
-  #            card_positions
-  #          ) do
-  #     reply(state, {:ok, next_action})
-  #   else
-  # {:error, error} -> reply(state, {:error, error})
-  #   end
-  # end
-  #
-  # @impl true
-  # def handle_call({:play_cards, player_position, card_positions}, _from, state) do
-  #   with {:ok, waiting_on} <-
-  #          Table.validate_play(state.table, player_position, card_positions),
-  #        {:ok, next_action} <-
-  #          Rules.validate_play(
-  #            state.rules,
-  #            state.table,
-  #            player_position,
-  #            card_positions
-  #          ),
-  #        {:ok, rules} <-
-  #          Rules.check(
-  #            state.rules,
-  #            {:play, player_position, next_action}
-  #          ),
-  #        table <-
-  #          Table.discard_cards(state.table, player_position, card_positions) do
-  #     state
-  #     |> update_rules(rules)
-  #     |> update_table(table)
-  #     |> reply(:ok)
-  #   else
-  #     :error -> reply(state, :error)
-  #   end
-  # end
 
   ###
   # Private Functions

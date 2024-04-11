@@ -17,11 +17,12 @@ defmodule SleepingQueensEngine.PlayValidator do
           | :block_place_queen_back_on_board
           | :choose_queen_to_steal
           | :choose_queen_to_place_back_on_board
-  @type waiting_on() :: %{
-          player_position: player_position(),
-          action: waiting_on_action()
-        }
-  @type next_action() :: nil | waiting_on()
+  @type waiting_on() ::
+          %{
+            player_position: player_position(),
+            action: waiting_on_action()
+          }
+          | nil
 
   @offensive_action_card_types [:king, :jester, :knight, :sleeping_potion]
 
@@ -37,7 +38,7 @@ defmodule SleepingQueensEngine.PlayValidator do
           Rules.t(),
           Table.t()
         ) ::
-          {:ok, next_action()} | :error
+          {:ok, waiting_on()} | :error
   # When it's waiting on player, check if they can protect queen from being stolen or placed back on the board
   def check(
         :play,
