@@ -232,25 +232,28 @@ defmodule PlayValidatorTest do
       :setup_waiting_on
     ]
 
-    # TODO>>>> Could be a good place to implement a property test where I test player playing every other card in the deck to protect the queen
-    @tag player_turn: :player,
-         cards_in_player_hand: [:king]
-    test "successfully returns nil for waiting_on when checking to discard a single card of any type",
-         %{
-           player: %{position: player_position},
-           rules: rules,
-           table: table
-         } do
-      card_positions = [1]
+    for card_type <-
+          [:king, :jester, :knight, :dragon, :wand, :sleeping_potion] ++
+            Enum.to_list(1..10) do
+      @tag player_turn: :player,
+           cards_in_player_hand: [card_type]
+      test "successfully returns nil for waiting_on when checking to discard a #{card_type}",
+           %{
+             player: %{position: player_position},
+             rules: rules,
+             table: table
+           } do
+        card_positions = [1]
 
-      assert {:ok, nil = _waiting_on} =
-               PlayValidator.check(
-                 :discard,
-                 player_position,
-                 card_positions,
-                 rules,
-                 table
-               )
+        assert {:ok, nil = _waiting_on} =
+                 PlayValidator.check(
+                   :discard,
+                   player_position,
+                   card_positions,
+                   rules,
+                   table
+                 )
+      end
     end
 
     @tag player_turn: :player,
