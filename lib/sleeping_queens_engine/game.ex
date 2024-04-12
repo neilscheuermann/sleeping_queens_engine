@@ -53,6 +53,9 @@ defmodule SleepingQueensEngine.Game do
   def play(game, player_position, card_positions),
     do: GenServer.call(game, {:play, player_position, card_positions})
 
+  def select_queen(game, player_position, row, col),
+    do: GenServer.call(game, {:select_queen, player_position, row, col})
+
   # def can_play_cards?(game, player_position, card_positions),
   #   do:
   #     GenServer.call(game, {:can_play_cards?, player_position, card_positions})
@@ -209,6 +212,30 @@ defmodule SleepingQueensEngine.Game do
       |> reply(:ok)
     else
       error -> reply(state, error)
+    end
+  end
+
+  @impl true
+  def handle_call({:select_queen, player_position, row, col}, _from, state) do
+    with %{action: :select_queen, player_position: waiting_player_position}
+         when waiting_player_position == player_position <-
+           state.rules.waiting_on,
+         {:ok, table} <-
+           Table.select_queen(
+             state.table,
+             {row, col},
+             player_position
+           ),
+         {:ok, rules} <-
+           Rules.check(state.rules, {:play, player_position, nil}),
+         {:ok, rules} <- Rules.check(rules, :deal_cards),
+         table <- Table.deal_cards(table, state.rules.player_turn) do
+      state
+      |> update_rules(rules)
+      |> update_table(table)
+      |> reply(:ok)
+    else
+      _error -> reply(state, :error)
     end
   end
 

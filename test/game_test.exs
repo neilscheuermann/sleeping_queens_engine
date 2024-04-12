@@ -434,6 +434,104 @@ defmodule GameTest do
     end
   end
 
+  describe "select_queen/4" do
+    test "successfully moves queen to player, deals cards, resets waiting_on, and advances player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn
+      })
+
+      row = 1
+      col = 1
+
+      assert :ok = Game.select_queen(pid, player_turn, row, col)
+
+      %{
+        rules: %{player_turn: updated_player_turn, waiting_on: waiting_on},
+        table: %{players: updated_players, queens_board: queens_board}
+      } = Game.get_state(pid)
+
+      assert Map.get(queens_board, {row, col}) == nil
+
+      assert [%SleepingQueensEngine.QueenCard{}] =
+               updated_players
+               |> Enum.find(&(&1.position == player_turn))
+               |> Map.get(:queens)
+
+      assert waiting_on == nil
+      assert updated_player_turn == player_turn + 1
+
+      for player <- updated_players do
+        assert length(player.hand) == @max_allowed_cards_in_hand
+      end
+    end
+
+    test "returns error when it's player's turn but not correct waiting_on" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, nil)
+
+      row = 1
+      col = 1
+
+      assert :error = Game.select_queen(pid, player_turn, row, col)
+    end
+
+    test "returns error when wrong player tries to select a queen" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn + 1
+      })
+
+      row = 1
+      col = 1
+
+      assert :error = Game.select_queen(pid, player_turn, row, col)
+    end
+
+    test "returns error when it's waiting on player to select a queen but the coordinates are invalid" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn
+      })
+
+      row = 99
+      col = 99
+
+      assert :error = Game.select_queen(pid, player_turn, row, col)
+    end
+  end
+
   # Shouldn't usually directly udpate a gen server's state without using a public fn,
   # but this seems the best option to ensure 2 incompatible cards are selected.
   # This replaces player1's hand with 2 cards that can't be discarded together
@@ -447,6 +545,14 @@ defmodule GameTest do
             player
           end
         end)
+      end)
+    end)
+  end
+
+  defp set_waiting_on(pid, waiting_on) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.rules, fn rules ->
+        %{rules | waiting_on: waiting_on}
       end)
     end)
   end
