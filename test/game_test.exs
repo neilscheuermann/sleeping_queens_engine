@@ -532,6 +532,99 @@ defmodule GameTest do
     end
   end
 
+  describe "draw_for_jester/4" do
+    test "sets correct waiting_on when drawing a number and doesn't change player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :draw_for_jester,
+        player_position: player_turn
+      })
+
+      replace_draw_pile_with(pid, %SleepingQueensEngine.Card{
+        type: :number,
+        name: nil,
+        value: 1
+      })
+
+      assert :ok = Game.draw_for_jester(pid, player_turn)
+
+      assert %{
+               rules: %{
+                 player_turn: ^player_turn,
+                 waiting_on: %{
+                   action: :select_queen,
+                   player_position: ^player_turn
+                 }
+               }
+             } = Game.get_state(pid)
+    end
+
+    test "sets correct waiting_on when drawing an action card and doesn't change player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :draw_for_jester,
+        player_position: player_turn
+      })
+
+      replace_player_hand_with(pid, player_turn, [])
+      replace_draw_pile_with(pid, %SleepingQueensEngine.Card{type: :wand})
+
+      assert :ok = Game.draw_for_jester(pid, player_turn)
+
+      assert %{
+               rules: %{
+                 player_turn: ^player_turn,
+                 waiting_on: nil
+               }
+             } = Game.get_state(pid)
+    end
+
+    test "returns error when it's player's turn but not correct waiting_on" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, nil)
+
+      assert :error = Game.draw_for_jester(pid, player_turn)
+    end
+
+    test "returns error when wrong player tries to draw for jester" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :draw_for_jester,
+        player_position: player_turn + 1
+      })
+
+      assert :error = Game.draw_for_jester(pid, player_turn)
+    end
+  end
+
   # Shouldn't usually directly udpate a gen server's state without using a public fn,
   # but this seems the best option to ensure 2 incompatible cards are selected.
   # This replaces player1's hand with 2 cards that can't be discarded together
@@ -546,6 +639,12 @@ defmodule GameTest do
           end
         end)
       end)
+    end)
+  end
+
+  defp replace_draw_pile_with(pid, card) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.table.draw_pile, fn _draw_pile -> [card] end)
     end)
   end
 
