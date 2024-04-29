@@ -127,14 +127,15 @@ defmodule RulesTest do
          %{rules: rules} do
       player_position = 1
       rules = Map.replace(rules, :player_turn, player_position)
-      waiting_on = %{}
 
       refute rules.waiting_on
 
-      assert {:ok, rules} =
-               Rules.check(rules, {:play, player_position, waiting_on})
+      new_waiting_on = %{}
 
-      assert rules.waiting_on == waiting_on
+      assert {:ok, rules} =
+               Rules.check(rules, {:play, player_position, new_waiting_on})
+
+      assert rules.waiting_on == new_waiting_on
     end
 
     test ":play errors when it's not the player's turn", %{

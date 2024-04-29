@@ -76,6 +76,18 @@ defmodule SleepingQueensEngine.Rules do
   def check(
         %Rules{
           state: :playing,
+          player_turn: player_turn,
+          waiting_on: nil
+        } = rules,
+        {:play, player_position, waiting_on}
+      )
+      when player_position == player_turn do
+    {:ok, %Rules{rules | waiting_on: waiting_on}}
+  end
+
+  def check(
+        %Rules{
+          state: :playing,
           waiting_on: %{
             player_position: waiting_player_position
           }
@@ -83,17 +95,6 @@ defmodule SleepingQueensEngine.Rules do
         {:play, player_position, waiting_on}
       )
       when player_position == waiting_player_position do
-    {:ok, %Rules{rules | waiting_on: waiting_on}}
-  end
-
-  def check(
-        %Rules{
-          state: :playing,
-          player_turn: player_turn
-        } = rules,
-        {:play, player_position, waiting_on}
-      )
-      when player_position == player_turn do
     {:ok, %Rules{rules | waiting_on: waiting_on}}
   end
 
