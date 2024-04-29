@@ -24,8 +24,6 @@ defmodule SleepingQueensEngine.PlayValidator do
           }
           | nil
 
-  @offensive_action_card_types [:king, :jester, :knight, :sleeping_potion]
-
   @doc """
   Checks if a player can play or discard a chosen set of cards based on the 
   current state of the game.
@@ -68,7 +66,7 @@ defmodule SleepingQueensEngine.PlayValidator do
     end
   end
 
-  # When it's player's turn, check's if they can play offensive action card
+  # When it's player's turn, check's if they can play offense action card
   def check(
         :play,
         player_position,
@@ -84,7 +82,7 @@ defmodule SleepingQueensEngine.PlayValidator do
              length(card_positions) == 1 do
     [card] = view_cards(table, player_position, card_positions)
 
-    if is_offensive_action_card?(card) do
+    if Card.offense_action_card?(card) do
       {:ok, determine_next_waiting_on(card, player_position)}
     else
       :error
@@ -135,9 +133,6 @@ defmodule SleepingQueensEngine.PlayValidator do
     do: true
 
   defp can_protect_queen?(_waiting_action, _card), do: false
-
-  defp is_offensive_action_card?(%Card{type: type}),
-    do: type in @offensive_action_card_types
 
   defp is_valid_discard?([%Card{}]), do: true
 

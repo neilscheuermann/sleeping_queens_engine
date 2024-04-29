@@ -20,8 +20,9 @@ defmodule SleepingQueensEngine.Card do
         ]
 
   @kings ~w(name1 name2 name3 name4 name5 name6 name7 name8 name9 name10)a
+  @offense_action_card_types [:king, :jester, :knight, :sleeping_potion]
 
-  @spec draw_pile_shuffled() :: list(Card.t())
+  @spec draw_pile_shuffled() :: list(__MODULE__.t())
   def draw_pile_shuffled() do
     cards =
       kings() ++
@@ -35,8 +36,12 @@ defmodule SleepingQueensEngine.Card do
     shuffle(cards)
   end
 
-  @spec shuffle(list(Card.t())) :: list(Card.t())
+  @spec shuffle(list(__MODULE__.t())) :: list(__MODULE__.t())
   def shuffle(cards), do: Enum.shuffle(cards)
+
+  @spec offense_action_card?(__MODULE__.t()) :: boolean()
+  def offense_action_card?(%Card{type: type}),
+    do: type in @offense_action_card_types
 
   ###
   # Private Functions
