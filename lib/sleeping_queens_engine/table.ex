@@ -4,6 +4,7 @@ defmodule SleepingQueensEngine.Table do
   alias SleepingQueensEngine.Player
   alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.QueensBoard
+  alias SleepingQueensEngine.Rules
 
   @max_allowed_players 5
   @max_allowed_cards_in_hand 5
@@ -31,6 +32,10 @@ defmodule SleepingQueensEngine.Table do
           opponent_queen_position: player_queen_position(),
           queen_coordinate: queen_coordinate() | nil,
           stealing_player_position: player_position() | nil
+        }
+  @type waiting_on() :: %{
+          player_position: player_position(),
+          action: :select_queen
         }
 
   defguard selected_enough_cards?(card_positions)
@@ -210,6 +215,47 @@ defmodule SleepingQueensEngine.Table do
     end
   end
 
+  @doc """
+  Player draws the top card after jester is played. This returns an updated table
+  with the correct next waiting_on.
+
+  When the top card is an action card the card is placed in the player's hand and
+  they can take another turn. No next waiting_on.
+
+  When the top card is a number the card is discarded and count off the number
+  of the players to the left, starting with the player who drew the jester. The 
+  next waiting_on should indicate this player to select a queen.
+  """
+  @spec draw_for_jester(Table.t(), Rules.t(), player_position()) ::
+          {:ok, Table.t(), nil | waiting_on()} | :error
+  def draw_for_jester(
+        table,
+        %{
+          waiting_on: %{
+            action: :draw_for_jester,
+            player_position: waiting_player_position
+          }
+        } = rules,
+        player_position
+      )
+      when waiting_player_position == player_position do
+    [top_card | remaining_draw_pile] = table.draw_pile
+
+    updated_table =
+      table
+      |> update_draw_pile(remaining_draw_pile)
+      |> maybe_update_discard_pile(top_card)
+      |> maybe_update_players_hand(top_card, player_position)
+
+    waiting_on = determine_next_waiting_on(rules, top_card)
+
+    {:ok, updated_table, waiting_on}
+  end
+
+  def draw_for_jester(_table, _waiting_on, _player_position) do
+    :error
+  end
+
   ###
   # Private Functions
   #
@@ -313,5 +359,56 @@ defmodule SleepingQueensEngine.Table do
 
   defp update_queens_board(table, updated_queens_board) do
     update_in(table.queens_board, fn _queens_board -> updated_queens_board end)
+  end
+
+  defp maybe_update_discard_pile(table, card_from_jester) do
+    update_in(table.discard_pile, fn discard_pile ->
+      if card_from_jester.type == :number do
+        [card_from_jester | discard_pile]
+      else
+        discard_pile
+      end
+    end)
+  end
+
+  defp maybe_update_players_hand(table, card_from_jester, player_position) do
+    update_in(table.players, fn players ->
+      Enum.map(players, fn player ->
+        if player.position == player_position and
+             card_from_jester.type != :number do
+          update_in(player.hand, fn hand
+                                    when length(hand) <
+                                           @max_allowed_cards_in_hand ->
+            [card_from_jester | hand]
+          end)
+        else
+          player
+        end
+      end)
+    end)
+  end
+
+  defp determine_next_waiting_on(rules, card_from_jester) do
+    if card_from_jester.type == :number do
+      %{
+        action: :select_queen,
+        player_position:
+          count_players_to_select_queen(rules, card_from_jester.value)
+      }
+    else
+      nil
+    end
+  end
+
+  defp count_players_to_select_queen(rules, positions_to_count) do
+    Enum.reduce(1..positions_to_count, rules.player_turn, fn count, acc ->
+      cond do
+        # the first count starts on the player whose turn it is
+        count == 1 -> acc
+        # then start counting left, starting over at player one after counting last player
+        acc < rules.player_count -> acc + 1
+        true -> 1
+      end
+    end)
   end
 end

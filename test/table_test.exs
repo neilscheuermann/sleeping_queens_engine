@@ -5,6 +5,7 @@ defmodule TableTest do
   alias SleepingQueensEngine.Table
   alias SleepingQueensEngine.Card
   alias SleepingQueensEngine.Player
+  alias SleepingQueensEngine.Rules
 
   @expected_draw_pile_size 68
   @max_allowed_players 5
@@ -445,6 +446,223 @@ defmodule TableTest do
                  @player1_position,
                  @invalid_queen_position,
                  @player2_position
+               )
+    end
+  end
+
+  describe "draw_for_jester/4" do
+    setup do
+      player1 = Player.new("Ron")
+      player2 = Player.new("Leslie")
+      players = [player1, player2]
+      table = Table.new(players)
+
+      %{
+        table: table
+      }
+    end
+
+    test "successfully returns an updated table with card in player's hand if action card, and nil for next waiting_on",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          player_position: 1,
+          action: :draw_for_jester
+        }
+      }
+
+      table =
+        update_in(table.draw_pile, fn _draw_pile -> [%Card{type: :king}] end)
+
+      assert {:ok, table, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert table.draw_pile == []
+      assert table.discard_pile == []
+      assert waiting_on == nil
+    end
+
+    test "successfully returns an updated table with card discarded if number card, and next waiting_on indicating correct player to draw a queen",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          action: :draw_for_jester,
+          player_position: 1
+        }
+      }
+
+      table =
+        update_in(table.draw_pile, fn _draw_pile ->
+          [%Card{type: :number, value: 4}]
+        end)
+
+      assert {:ok, table, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert table.draw_pile == []
+      assert table.discard_pile == [%Card{type: :number, value: 4}]
+
+      assert waiting_on == %{
+               action: :select_queen,
+               player_position: 2
+             }
+    end
+
+    test "selects the correct person to pickup the queen based on player's turn and number card",
+         %{table: table} do
+      # scenario 1
+      rules = %Rules{
+        state: :playing,
+        player_count: 5,
+        player_turn: 2,
+        waiting_on: %{
+          action: :draw_for_jester,
+          player_position: 2
+        }
+      }
+
+      table =
+        update_in(table.draw_pile, fn _draw_pile ->
+          [%Card{type: :number, value: 7}]
+        end)
+
+      assert {:ok, _, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert waiting_on == %{
+               action: :select_queen,
+               player_position: 3
+             }
+
+      # scenario 2
+      rules = %Rules{
+        state: :playing,
+        player_count: 3,
+        player_turn: 3,
+        waiting_on: %{
+          action: :draw_for_jester,
+          player_position: 3
+        }
+      }
+
+      table =
+        update_in(table.draw_pile, fn _draw_pile ->
+          [%Card{type: :number, value: 2}]
+        end)
+
+      assert {:ok, _, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert waiting_on == %{
+               action: :select_queen,
+               player_position: 1
+             }
+
+      # scenario 3
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          action: :draw_for_jester,
+          player_position: 1
+        }
+      }
+
+      table =
+        update_in(table.draw_pile, fn _draw_pile ->
+          [%Card{type: :number, value: 10}]
+        end)
+
+      assert {:ok, _, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert waiting_on == %{
+               action: :select_queen,
+               player_position: 2
+             }
+    end
+
+    test "errors if wrong waiting_on action",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          player_position: 1,
+          action: :steal_queen
+        }
+      }
+
+      assert :error =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+    end
+
+    test "errors if nil waiting_on",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: nil
+      }
+
+      assert :error =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+    end
+
+    test "errors if waiting_on :draw_for_jester but not waiting on player_position",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          player_position: 2,
+          action: :steal_queen
+        }
+      }
+
+      assert :error =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
                )
     end
   end
