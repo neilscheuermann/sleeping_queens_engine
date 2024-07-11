@@ -13,6 +13,7 @@ defmodule PlayValidatorTest do
       :setup_game_table,
       :setup_rules_state,
       :setup_cards_in_player_hand,
+      :setup_select_queen_for_player,
       :setup_player_turn,
       :setup_waiting_on
     ]
@@ -66,8 +67,10 @@ defmodule PlayValidatorTest do
     end
 
     @tag player_turn: :player,
-         cards_in_player_hand: [:knight]
-    test "successfully prompts currrent player to choose queen to steal when checking to play a knight",
+         cards_in_player_hand: [:knight],
+         # other player
+         select_queen_for_player: 2
+    test "successfully prompts currrent player to choose queen to steal when checking to play a knight if others have a queen",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -90,8 +93,30 @@ defmodule PlayValidatorTest do
     end
 
     @tag player_turn: :player,
-         cards_in_player_hand: [:sleeping_potion]
-    test "successfully prompts current player to choose queen to place back on board when checking to play a sleeping potion",
+         cards_in_player_hand: [:knight]
+    test "errors when checking to play a knight if no others have a queen",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_positions = [1]
+
+      assert :error =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 card_positions,
+                 rules,
+                 table
+               )
+    end
+
+    @tag player_turn: :player,
+         cards_in_player_hand: [:sleeping_potion],
+         # other player
+         select_queen_for_player: 2
+    test "successfully prompts current player to choose queen to place back on board when checking to play a sleeping potion if others have a queen",
          %{
            player: %{position: player_position},
            rules: rules,
@@ -104,6 +129,26 @@ defmodule PlayValidatorTest do
                 action: :choose_queen_to_place_back_on_board,
                 player_position: ^player_position
               }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 card_positions,
+                 rules,
+                 table
+               )
+    end
+
+    @tag player_turn: :player,
+         cards_in_player_hand: [:sleeping_potion]
+    test "errors when checking to play a sleeping potion if no others have a queen",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_positions = [1]
+
+      assert :error =
                PlayValidator.check(
                  :play,
                  player_position,
@@ -504,9 +549,9 @@ defmodule PlayValidatorTest do
   end
 
   defp setup_cards_in_player_hand(
-         ctx = %{
+         %{
            cards_in_player_hand: card_types
-         }
+         } = ctx
        ) do
     cards = Enum.map(card_types, &build_card/1)
 
@@ -518,6 +563,16 @@ defmodule PlayValidatorTest do
   defp setup_cards_in_player_hand(_ctx) do
     :ok
   end
+
+  defp setup_select_queen_for_player(
+         %{select_queen_for_player: player_position} = ctx
+       ) do
+    {:ok, table} = Table.select_queen(ctx.table, {1, 1}, player_position)
+
+    [table: table]
+  end
+
+  defp setup_select_queen_for_player(_ctx), do: :ok
 
   defp setup_player_turn(ctx = %{player_turn: player_turn}) do
     rules = Map.replace(ctx.rules, :player_turn, ctx[player_turn].position)

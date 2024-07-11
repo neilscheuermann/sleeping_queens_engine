@@ -82,7 +82,8 @@ defmodule SleepingQueensEngine.PlayValidator do
              length(card_positions) == 1 do
     [card] = view_cards(table, player_position, card_positions)
 
-    if Card.offense_action_card?(card) do
+    if Card.offense_action_card?(card) and
+         can_play_offense_action_card?(card, table, player_position) do
       {:ok, determine_next_waiting_on(card, player_position)}
     else
       :error
@@ -180,4 +181,24 @@ defmodule SleepingQueensEngine.PlayValidator do
         }
     end
   end
+
+  defp can_play_offense_action_card?(
+         %Card{type: :king},
+         _table,
+         _player_position
+       ),
+       do: true
+
+  defp can_play_offense_action_card?(
+         %Card{type: :jester},
+         _table,
+         _player_position
+       ),
+       do: true
+
+  defp can_play_offense_action_card?(%Card{type: type}, table, player_position)
+       when type in [:knight, :sleeping_potion],
+       do: Table.others_have_a_queen?(table, player_position)
+
+  defp can_play_offense_action_card?(_card, _table, _player_position), do: false
 end
