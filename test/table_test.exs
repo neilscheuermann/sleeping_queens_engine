@@ -667,6 +667,54 @@ defmodule TableTest do
     end
   end
 
+  describe "others_have_a_queen?/4" do
+    setup do
+      player1 = Player.new("Ron")
+      player2 = Player.new("Leslie")
+      player3 = Player.new("Tom")
+      players = [player1, player2, player3]
+      table = Table.new(players)
+
+      %{
+        table: table
+      }
+    end
+
+    test "true when 1 other player has a queen", %{table: table} do
+      current_player = Enum.at(table.players, 0)
+      other_player = Enum.at(table.players, 1)
+
+      {:ok, table} = Table.select_queen(table, {1, 1}, other_player.position)
+
+      assert Table.others_have_a_queen?(table, current_player.position)
+    end
+
+    test "true when 2+ other players have a queen", %{table: table} do
+      current_player = Enum.at(table.players, 0)
+      other_player1 = Enum.at(table.players, 1)
+      other_player2 = Enum.at(table.players, 2)
+
+      {:ok, table} = Table.select_queen(table, {1, 1}, other_player1.position)
+      {:ok, table} = Table.select_queen(table, {1, 2}, other_player2.position)
+
+      assert Table.others_have_a_queen?(table, current_player.position)
+    end
+
+    test "false when current player has a queen", %{table: table} do
+      current_player = Enum.at(table.players, 0)
+
+      {:ok, table} = Table.select_queen(table, {1, 1}, current_player.position)
+
+      refute Table.others_have_a_queen?(table, current_player.position)
+    end
+
+    test "false when no one has a queen", %{table: table} do
+      current_player = Enum.at(table.players, 0)
+
+      refute Table.others_have_a_queen?(table, current_player.position)
+    end
+  end
+
   ###
   # Private Functions
   #
