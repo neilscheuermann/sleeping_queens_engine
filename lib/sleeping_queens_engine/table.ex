@@ -81,7 +81,7 @@ defmodule SleepingQueensEngine.Table do
 
   @spec deal_cards(Table.t(), player_position()) :: Table.t()
   def deal_cards(table, starting_player_position \\ 1) do
-    # TODO>>>> find a better way to loop through players until each has 5 cards
+    # TODO::: find a better way to loop through players until each has 5 cards
     Enum.reduce_while(
       1..1_000,
       {table, starting_player_position},
@@ -294,7 +294,7 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
-  # TODO>>> Change players from a list to a map with player position for keys.
+  # TODO::: Change players from a list to a map with player position for keys.
   # Then I could replace with a Map.replace, rather than this Enum map.
   defp do_update_player(players, updated_player) do
     Enum.map(players, fn player ->
@@ -360,7 +360,7 @@ defmodule SleepingQueensEngine.Table do
     update_in(table.draw_pile, fn _draw_pile -> updated_draw_pile end)
   end
 
-  # TODO>>>> Just pass in the updated  queen to this function
+  # TODO::: Just pass in the updated  queen to this function
   defp update_players_with_new_queen(table, selected_queen, player_position) do
     update_in(table.players, fn players ->
       give_player_queen(players, selected_queen, player_position)

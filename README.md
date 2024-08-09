@@ -5,7 +5,7 @@ This holds the game logic for the popular children's card game,
 
 ## Rules of Play
 
-_[TODO>>>>: Select which rulebook to follow. 12 or 16 queens, but the rest is
+_[TODO::: Select which rulebook to follow. 12 or 16 queens, but the rest is
 the same.]_
 
 - [Sleeping Queens rules](https://gamewright.com/pdfs/Rules/SleepingQueensTM-RULES.pdf)

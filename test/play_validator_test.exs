@@ -80,7 +80,7 @@ defmodule PlayValidatorTest do
 
       assert {:ok,
               %{
-                action: :choose_queen_to_steal,
+                action: :steal_queen,
                 player_position: ^player_position
               }} =
                PlayValidator.check(
@@ -126,7 +126,7 @@ defmodule PlayValidatorTest do
 
       assert {:ok,
               %{
-                action: :choose_queen_to_place_back_on_board,
+                action: :place_queen_back_on_board,
                 player_position: ^player_position
               }} =
                PlayValidator.check(
@@ -257,7 +257,7 @@ defmodule PlayValidatorTest do
                )
     end
 
-    # TODO>>>> Could be a good place to implement a property test where I test player playing every other card in the deck to protect the queen
+    # TODO::: Could be a good place to implement a property test where I test player playing every other card in the deck to protect the queen
     # test "errors when playing any other card", %{
     #   rules: rules
     # } do
@@ -608,7 +608,7 @@ defmodule PlayValidatorTest do
 
   defp build_card(card_type), do: %Card{type: card_type}
 
-  # TODO>>>> Add this as add_cards_to_player_hand function to Table? 
+  # TODO::: Add this as add_cards_to_player_hand function to Table? 
   # Might be useful in deal function refactor?
   defp add_cards_to_player_hand(table, cards, player_position) do
     update_in(table.players, fn players ->
@@ -626,7 +626,7 @@ defmodule PlayValidatorTest do
     end)
   end
 
-  # # TODO>>>> Maybe use with property test above?
+  # # TODO::: Maybe use with property test above?
   # defp empty_player_hand(table, player_position) do
   #   update_in(table.players, fn players ->
   #     remove_player_cards(players, player_position)

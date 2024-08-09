@@ -15,8 +15,8 @@ defmodule SleepingQueensEngine.PlayValidator do
           | :draw_for_jester
           | :block_steal_queen
           | :block_place_queen_back_on_board
-          | :choose_queen_to_steal
-          | :choose_queen_to_place_back_on_board
+          | :steal_queen
+          | :place_queen_back_on_board
   @type waiting_on() ::
           %{
             player_position: player_position(),
@@ -66,7 +66,7 @@ defmodule SleepingQueensEngine.PlayValidator do
     end
   end
 
-  # When it's player's turn, check's if they can play offense action card
+  # When it's player's turn, checks if they can play offense action card
   def check(
         :play,
         player_position,
@@ -172,12 +172,12 @@ defmodule SleepingQueensEngine.PlayValidator do
         %{player_position: player_position, action: :draw_for_jester}
 
       %Card{type: :knight} ->
-        %{player_position: player_position, action: :choose_queen_to_steal}
+        %{player_position: player_position, action: :steal_queen}
 
       %Card{type: :sleeping_potion} ->
         %{
           player_position: player_position,
-          action: :choose_queen_to_place_back_on_board
+          action: :place_queen_back_on_board
         }
     end
   end

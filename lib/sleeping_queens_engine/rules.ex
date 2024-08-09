@@ -5,7 +5,8 @@ defmodule SleepingQueensEngine.Rules do
           state: valid_game_states(),
           player_count: pos_integer(),
           player_turn: pos_integer(),
-          waiting_on: nil | waiting_on()
+          waiting_on: nil | waiting_on(),
+          queen_to_lose: nil | queen_to_lose()
         }
 
   @type player_position() :: pos_integer()
@@ -21,10 +22,16 @@ defmodule SleepingQueensEngine.Rules do
           player_position: player_position(),
           action: waiting_on_actions()
         }
+  @type queen_to_lose() :: %{
+          player_position: pos_integer(),
+          queen_position: pos_integer()
+        }
   defstruct state: :initialized,
             player_count: 0,
             player_turn: 1,
-            waiting_on: nil
+            waiting_on: nil,
+            # TDOD::: Add tests
+            queen_to_lose: nil
 
   @range_of_allowed_players 2..5
   @max_allowed_players 5
@@ -73,16 +80,17 @@ defmodule SleepingQueensEngine.Rules do
     end
   end
 
+  # TODO::: Update tests
   def check(
         %Rules{
           state: :playing,
           player_turn: player_turn,
           waiting_on: nil
         } = rules,
-        {:play, player_position, waiting_on}
+        {:play, player_position, waiting_on, queen_to_lose}
       )
       when player_position == player_turn do
-    {:ok, %Rules{rules | waiting_on: waiting_on}}
+    {:ok, %Rules{rules | waiting_on: waiting_on, queen_to_lose: queen_to_lose}}
   end
 
   def check(
@@ -92,10 +100,10 @@ defmodule SleepingQueensEngine.Rules do
             player_position: waiting_player_position
           }
         } = rules,
-        {:play, player_position, waiting_on}
+        {:play, player_position, waiting_on, queen_to_lose}
       )
       when player_position == waiting_player_position do
-    {:ok, %Rules{rules | waiting_on: waiting_on}}
+    {:ok, %Rules{rules | waiting_on: waiting_on, queen_to_lose: queen_to_lose}}
   end
 
   def check(
