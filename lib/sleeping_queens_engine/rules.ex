@@ -18,6 +18,7 @@ defmodule SleepingQueensEngine.Rules do
           | :block_place_queen_back_on_board
           | :steal_queen
           | :place_queen_back_on_board
+          | :pick_spot_to_return_queen
   @type waiting_on() :: %{
           player_position: player_position(),
           action: waiting_on_actions()

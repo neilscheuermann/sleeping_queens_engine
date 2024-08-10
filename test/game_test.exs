@@ -636,9 +636,16 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
       opponent_position = player_turn + 1
 
+      set_player_turn(pid, opponent_position)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: opponent_position
+      })
+
       row = 1
       col = 1
-      Game.select_queen(pid, opponent_position, row, col)
+      :ok = Game.select_queen(pid, opponent_position, row, col)
 
       opponent_queen_position = 1
 
@@ -730,6 +737,136 @@ defmodule GameTest do
     end
   end
 
+  describe "lose_queen/1" do
+    test "successfully lose queen to player whose turn it is when stolen, nil next waiting on and queen to lose" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+      player_position = 1
+      opponent_position = 2
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: opponent_position
+      })
+
+      set_player_turn(pid, opponent_position)
+
+      row = 1
+      col = 1
+      Game.select_queen(pid, opponent_position, row, col)
+      opponent_queen_position = 1
+
+      set_waiting_on(pid, %{
+        action: :block_steal_queen,
+        player_position: opponent_position
+      })
+
+      set_queen_to_lose(pid, %{
+        player_position: opponent_position,
+        queen_position: opponent_queen_position
+      })
+
+      # Test/Assert
+      assert :ok = Game.lose_queen(pid)
+
+      %{rules: rules, table: %{players: updated_players}} = Game.get_state(pid)
+
+      assert [] =
+               updated_players
+               |> Enum.find(&(&1.position == opponent_position))
+               |> Map.get(:queens)
+
+      assert [%SleepingQueensEngine.QueenCard{}] =
+               updated_players
+               |> Enum.find(&(&1.position == player_position))
+               |> Map.get(:queens)
+
+      assert %{waiting_on: nil, queen_to_lose: nil} = rules
+    end
+
+    # TODO:::
+    test "successfully update waiting on when lose queen to putting back on board" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+      opponent_position = player_turn + 1
+
+      row = 1
+      col = 1
+      Game.select_queen(pid, opponent_position, row, col)
+      opponent_queen_position = 1
+
+      set_waiting_on(pid, %{
+        action: :block_place_queen_back_on_board,
+        player_position: opponent_position
+      })
+
+      set_queen_to_lose(pid, %{
+        player_position: opponent_position,
+        queen_position: opponent_queen_position
+      })
+
+      assert :ok = Game.lose_queen(pid)
+
+      %{rules: %{queen_to_lose: queen_to_lose}} = Game.get_state(pid)
+
+      assert %{
+               rules: %{
+                 waiting_on: %{
+                   action: :pick_spot_to_return_queen,
+                   player_position: ^player_turn
+                 },
+                 queen_to_lose: ^queen_to_lose
+               }
+             } = Game.get_state(pid)
+    end
+
+    test "returns error when incorrect waiting_on action" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      for waiting_on_action <- [:draw_for_jester, :select_queen] do
+        set_waiting_on(pid, %{
+          action: waiting_on_action,
+          player_position: player_turn
+        })
+
+        assert :error = Game.lose_queen(pid)
+      end
+    end
+
+    test "returns error when correct waiting_on action but missing queen to lose" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      for waiting_on_action <- [:steal_queen, :place_queen_back_on_board] do
+        set_waiting_on(pid, %{
+          action: waiting_on_action,
+          player_position: player_turn
+        })
+
+        assert :error = Game.lose_queen(pid)
+      end
+    end
+  end
+
   # Shouldn't usually directly udpate a gen server's state without using a public fn,
   # but this seems the best option to ensure 2 incompatible cards are selected.
   # This replaces player1's hand with 2 cards that can't be discarded together
@@ -753,10 +890,26 @@ defmodule GameTest do
     end)
   end
 
+  defp set_player_turn(pid, player_turn) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.rules, fn rules ->
+        %{rules | player_turn: player_turn}
+      end)
+    end)
+  end
+
   defp set_waiting_on(pid, waiting_on) do
     :sys.replace_state(pid, fn current_state ->
       update_in(current_state.rules, fn rules ->
         %{rules | waiting_on: waiting_on}
+      end)
+    end)
+  end
+
+  defp set_queen_to_lose(pid, queen_to_lose) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.rules, fn rules ->
+        %{rules | queen_to_lose: queen_to_lose}
       end)
     end)
   end

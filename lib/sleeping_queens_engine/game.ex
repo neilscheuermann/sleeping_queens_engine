@@ -57,7 +57,6 @@ defmodule SleepingQueensEngine.Game do
   def draw_for_jester(game, player_position),
     do: GenServer.call(game, {:draw_for_jester, player_position})
 
-  # TODO::: Add tests
   def select_opponent_queen(
         game,
         player_position,
@@ -71,7 +70,9 @@ defmodule SleepingQueensEngine.Game do
            opponent_queen_position}
         )
 
-  # TODO::: Add tests
+  # # TODO::: Add tests
+  # def protect_queen(game), do: GenServer.call(game, :protect_queen)
+
   def lose_queen(game), do: GenServer.call(game, :lose_queen)
 
   # TODO::: Add tests
@@ -316,6 +317,47 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
+  # @impl true
+  # def handle_call(
+  #       :protect_queen,
+  #       _from,
+  #       #  wating on the player to block the steal, but they chose not to
+  #       %{rules: %{waiting_on: %{action: action}}} = state
+  #     )
+  #     when action in [:block_steal_queen, :block_place_queen_back_on_board] do
+  #   # No next action needed because the player get's the opponent's queen
+  #   next_waiting_on = nil
+  #   next_queen_to_lose = nil
+  #
+  #   opponent_position = state.rules.waiting_on.player_position
+  #   opponent_queen_position = state.rules.queen_to_lose.queen_position
+  #   player_position = state.rules.player_turn
+  #
+  #   with {:ok, rules} <-
+  #          Rules.check(
+  #            state.rules,
+  #            # hack to get Rules.check to pass so I can update waiting_on and queen_to_lose
+  #            {:play, state.rules.waiting_on.player_position, next_waiting_on,
+  #             next_queen_to_lose}
+  #          ),
+  #        {:ok, table} <-
+  #          Table.steal_queen(
+  #            state.table,
+  #            opponent_position,
+  #            opponent_queen_position,
+  #            player_position
+  #          ),
+  #        {:ok, rules} <- Rules.check(rules, :deal_cards),
+  #        table <- Table.deal_cards(table, state.rules.player_turn) do
+  #     state
+  #     |> update_rules(rules)
+  #     |> update_table(table)
+  #     |> reply(:ok)
+  #   else
+  #     _ -> reply(state, :error)
+  #   end
+  # end
+
   # lose queen to a knight (stolen)
   @impl true
   def handle_call(
@@ -328,8 +370,7 @@ defmodule SleepingQueensEngine.Game do
     next_waiting_on = nil
     next_queen_to_lose = nil
 
-    opponent_position = state.rules.waiting_on.player_position
-    opponent_queen_position = state.rules.queen_to_lose.queen_position
+    queen_to_loose = state.rules.queen_to_lose
     player_position = state.rules.player_turn
 
     with {:ok, rules} <-
@@ -342,8 +383,8 @@ defmodule SleepingQueensEngine.Game do
          {:ok, table} <-
            Table.steal_queen(
              state.table,
-             opponent_position,
-             opponent_queen_position,
+             queen_to_loose[:player_position],
+             queen_to_loose[:queen_position],
              player_position
            ),
          {:ok, rules} <- Rules.check(rules, :deal_cards),
@@ -423,6 +464,11 @@ defmodule SleepingQueensEngine.Game do
     else
       _ -> reply(state, :error)
     end
+  end
+
+  @impl true
+  def handle_call(_, _from, state) do
+    reply(state, :error)
   end
 
   @impl true
