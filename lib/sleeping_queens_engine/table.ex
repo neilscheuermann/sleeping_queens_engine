@@ -8,6 +8,11 @@ defmodule SleepingQueensEngine.Table do
 
   @max_allowed_players 5
   @max_allowed_cards_in_hand 5
+  @min_num_of_queens_to_win_2_3_player_game 5
+  @min_num_of_queens_to_win_4_5_player_game 4
+  @min_score_to_win_2_3_player_game 50
+  @min_score_to_win_4_5_player_game 40
+  @empty_queens_board QueensBoard.empty()
 
   @type t() :: %__MODULE__{
           draw_pile: list(),
@@ -270,6 +275,38 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
+  @doc """
+  Win criteria: 
+
+  The first player to collect 5 queens or 50 points
+  worth of queens in a 2 - 3 player game, or 4 queens
+  or 40 points worth of queens in a 4 - 5 player game
+  wins. Points are counted by adding up the numbers
+  on each awakened queen. Alternately, play ends
+  when there are no more Sleeping Queens left in the
+  center and whoever has the most points wins.
+  """
+  @spec win_check(Table.t()) :: {:win | :no_win, nil | player_position()}
+  # TODO::: Implement player_with_most_points fn
+  # def win_check(%{queens_board: []} = table), do: {:win, player_with_most_points(table)}
+  def win_check(%{queens_board: @empty_queens_board} = table),
+    do: {:win, player_position_with_most_points(table)}
+
+  def win_check(table) do
+    winner =
+      table
+      |> Map.get(:players)
+      |> Enum.find(fn player ->
+        has_enough_queens_or_points?(table, player)
+      end)
+
+    if is_nil(winner) do
+      {:no_win, nil}
+    else
+      {:win, winner.position}
+    end
+  end
+
   ###
   # Private Functions
   #
@@ -424,5 +461,44 @@ defmodule SleepingQueensEngine.Table do
         true -> 1
       end
     end)
+  end
+
+  defp has_enough_queens_or_points?(table, player) do
+    has_enough_queens?(table, player) or
+      has_enough_points?(table, player)
+  end
+
+  defp has_enough_queens?(_table, %Player{queens: []}), do: false
+
+  defp has_enough_queens?(%Table{players: players}, %Player{} = player)
+       when length(players) in [2, 3] and
+              length(player.queens) >= @min_num_of_queens_to_win_2_3_player_game,
+       do: true
+
+  defp has_enough_queens?(%Table{players: players}, %Player{} = player)
+       when length(players) in [4, 5] and
+              length(player.queens) >= @min_num_of_queens_to_win_4_5_player_game,
+       do: true
+
+  defp has_enough_queens?(_table, _player), do: false
+
+  defp has_enough_points?(_table, %Player{queens: []}), do: false
+
+  defp has_enough_points?(%Table{players: players}, %Player{} = player)
+       when length(players) in [2, 3],
+       do: Player.calculate_score(player) >= @min_score_to_win_2_3_player_game
+
+  defp has_enough_points?(%Table{players: players}, %Player{} = player)
+       when length(players) in [4, 5],
+       do: Player.calculate_score(player) >= @min_score_to_win_4_5_player_game
+
+  defp player_position_with_most_points(table) do
+    table.players
+    |> Enum.map(fn player ->
+      Map.put(player, :score, Player.calculate_score(player))
+    end)
+    |> Enum.sort_by(& &1.score, :desc)
+    |> List.first()
+    |> Map.get(:position)
   end
 end

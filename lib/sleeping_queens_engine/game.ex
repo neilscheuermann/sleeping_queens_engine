@@ -128,6 +128,7 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
+  # TODO::: I don't think I need this anymore. Delete this?
   @impl true
   def handle_call(:deal_cards, _from, state) do
     with {:ok, rules} <- Rules.check(state.rules, :deal_cards),
@@ -245,6 +246,7 @@ defmodule SleepingQueensEngine.Game do
          {:ok, rules} <-
            Rules.check(state.rules, {:play, player_position, nil, nil}),
          {:ok, rules} <- Rules.check(rules, :deal_cards),
+         {:ok, rules} <- Rules.check(rules, {:win_check, win_or_no_win(table)}),
          table <- Table.deal_cards(table, state.rules.player_turn) do
       state
       |> update_rules(rules)
@@ -388,6 +390,7 @@ defmodule SleepingQueensEngine.Game do
              player_position
            ),
          {:ok, rules} <- Rules.check(rules, :deal_cards),
+         {:ok, rules} <- Rules.check(rules, {:win_check, win_or_no_win(table)}),
          table <- Table.deal_cards(table, state.rules.player_turn) do
       state
       |> update_rules(rules)
@@ -479,7 +482,14 @@ defmodule SleepingQueensEngine.Game do
   ###
   # Private Functions
   #
+
   defp update_table(state, table), do: put_in(state.table, table)
   defp update_rules(state, rules), do: put_in(state.rules, rules)
   defp reply(state, reply), do: {:reply, reply, state, @timeout}
+
+  defp win_or_no_win(table) do
+    {win_or_no_win, _player_position} = Table.win_check(table)
+
+    win_or_no_win
+  end
 end

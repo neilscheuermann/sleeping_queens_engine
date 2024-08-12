@@ -4,6 +4,7 @@ defmodule GameTest do
   alias SleepingQueensEngine.Game
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
+  alias SleepingQueensEngine.QueenCard
 
   @max_allowed_players 5
   @max_allowed_cards_in_hand 5
@@ -461,7 +462,7 @@ defmodule GameTest do
 
       assert Map.get(queens_board, {row, col}) == nil
 
-      assert [%SleepingQueensEngine.QueenCard{}] =
+      assert [%QueenCard{}] =
                updated_players
                |> Enum.find(&(&1.position == player_turn))
                |> Map.get(:queens)
@@ -472,6 +473,38 @@ defmodule GameTest do
       for player <- updated_players do
         assert length(player.hand) == @max_allowed_cards_in_hand
       end
+    end
+
+    test "successfully ends game when player selects enough queens" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_position}} = Game.get_state(pid)
+
+      queens = [
+        %QueenCard{value: 20, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""}
+      ]
+
+      replace_player_queens_with(pid, player_position, queens)
+
+      queen_card = %QueenCard{value: 10, special?: false, name: ""}
+      queen_coordinate = {1, 1}
+      place_queen_on_board_at_location(pid, queen_card, queen_coordinate)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_position
+      })
+
+      {row, col} = queen_coordinate
+      assert :ok = Game.select_queen(pid, player_position, row, col)
+
+      assert %{rules: %{state: :game_over}} = Game.get_state(pid)
     end
 
     test "returns error when it's player's turn but not correct waiting_on" do
@@ -779,7 +812,7 @@ defmodule GameTest do
                |> Enum.find(&(&1.position == opponent_position))
                |> Map.get(:queens)
 
-      assert [%SleepingQueensEngine.QueenCard{}] =
+      assert [%QueenCard{}] =
                updated_players
                |> Enum.find(&(&1.position == player_position))
                |> Map.get(:queens)
@@ -787,7 +820,43 @@ defmodule GameTest do
       assert %{waiting_on: nil, queen_to_lose: nil} = rules
     end
 
-    # TODO:::
+    test "successfully sets game state to game_over when player stealing queen makes player win" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+      player_position = 1
+      opponent_position = 2
+
+      queens = [
+        %QueenCard{value: 20, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""}
+      ]
+
+      replace_player_queens_with(pid, player_position, queens)
+
+      opponent_queens = [%QueenCard{value: 10, special?: false, name: ""}]
+      replace_player_queens_with(pid, opponent_position, opponent_queens)
+      opponent_queen_position = 1
+
+      set_waiting_on(pid, %{
+        action: :block_steal_queen,
+        player_position: opponent_position
+      })
+
+      set_queen_to_lose(pid, %{
+        player_position: opponent_position,
+        queen_position: opponent_queen_position
+      })
+
+      # Test/Assert
+      assert :ok = Game.lose_queen(pid)
+
+      assert %{rules: %{state: :game_over}} = Game.get_state(pid)
+    end
+
     test "successfully update waiting on when lose queen to putting back on board" do
       pid = start_supervised!({Game, "game_id"})
 
@@ -867,9 +936,54 @@ defmodule GameTest do
     end
   end
 
+  # Scenarios
+  # Player selects a queen (from a king or a jester)
+  # Player steals a queen from an opponent
+  describe "win check/1" do
+    test "successfully ends 2-3 player game when player selects a queen to win by 50 points" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+      player_position = 1
+
+      queens = [
+        %QueenCard{value: 20, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""},
+        %QueenCard{value: 10, special?: false, name: ""}
+      ]
+
+      replace_player_queens_with(pid, player_position, queens)
+
+      queen_card = %QueenCard{value: 10, special?: false, name: ""}
+      queen_coordinate = {1, 1}
+      place_queen_on_board_at_location(pid, queen_card, queen_coordinate)
+
+      assert %{rules: %{state: :playing}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_position
+      })
+
+      # Test/Assert
+      {row, col} = queen_coordinate
+      assert :ok = Game.select_queen(pid, player_position, row, col)
+
+      assert %{rules: %{state: :game_over}} = Game.get_state(pid)
+    end
+  end
+
+  # NOTE:
   # Shouldn't usually directly udpate a gen server's state without using a public fn,
   # but this seems the best option to ensure 2 incompatible cards are selected.
   # This replaces player1's hand with 2 cards that can't be discarded together
+
+  ###
+  # State helper functions
+  #
+
   defp replace_player_hand_with(pid, player_position, new_hand) do
     :sys.replace_state(pid, fn current_state ->
       update_in(current_state.table.players, fn players ->
@@ -880,6 +994,28 @@ defmodule GameTest do
             player
           end
         end)
+      end)
+    end)
+  end
+
+  defp replace_player_queens_with(pid, player_position, new_queens) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.table.players, fn players ->
+        Enum.map(players, fn player ->
+          if player.position == player_position do
+            %{player | queens: new_queens}
+          else
+            player
+          end
+        end)
+      end)
+    end)
+  end
+
+  defp place_queen_on_board_at_location(pid, queen_card, queen_coordinate) do
+    :sys.replace_state(pid, fn current_state ->
+      update_in(current_state.table.queens_board, fn queens_board ->
+        Map.replace(queens_board, queen_coordinate, queen_card)
       end)
     end)
   end

@@ -108,7 +108,7 @@ defmodule RulesTest do
       assert :error = Rules.check(rules, :start_game)
     end
 
-    test ":play returns success and updates waiting_on when it's the waiting_on player's turn",
+    test ":play returns success and updates waiting_on and queen_to_lose when it's the waiting_on player's turn",
          %{rules: rules} do
       waiting_player_position = 1
 
@@ -118,12 +118,13 @@ defmodule RulesTest do
         })
 
       assert {:ok, rules} =
-               Rules.check(rules, {:play, waiting_player_position, nil})
+               Rules.check(rules, {:play, waiting_player_position, nil, nil})
 
       refute rules.waiting_on
+      refute rules.queen_to_lose
     end
 
-    test ":play returns success and updates waiting_on when it's main player's turn",
+    test ":play returns success and updates waiting_on and queen_to_lose when it's main player's turn",
          %{rules: rules} do
       player_position = 1
       rules = Map.replace(rules, :player_turn, player_position)
@@ -131,9 +132,13 @@ defmodule RulesTest do
       refute rules.waiting_on
 
       new_waiting_on = %{}
+      new_queen_to_lose = %{}
 
       assert {:ok, rules} =
-               Rules.check(rules, {:play, player_position, new_waiting_on})
+               Rules.check(
+                 rules,
+                 {:play, player_position, new_waiting_on, new_queen_to_lose}
+               )
 
       assert rules.waiting_on == new_waiting_on
     end

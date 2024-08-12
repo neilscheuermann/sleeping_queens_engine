@@ -1,11 +1,11 @@
 defmodule TableTest do
   use ExUnit.Case
 
-  alias SleepingQueensEngine.QueenCard
-  alias SleepingQueensEngine.Table
   alias SleepingQueensEngine.Card
   alias SleepingQueensEngine.Player
+  alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.Rules
+  alias SleepingQueensEngine.Table
 
   @expected_draw_pile_size 68
   @max_allowed_players 5
@@ -715,6 +715,110 @@ defmodule TableTest do
     end
   end
 
+  describe "win_check/4" do
+    # TODO::: Maybe use property testing library that Cristiano mentioned at work.
+    # Would that make this implementation easier?
+    setup ctx do
+      {:ok, player_count: ctx[:player_count]}
+    end
+
+    for player_count <- 2..3 do
+      @tag player_count: player_count
+      test "reports win when player has <5 queens but 50 points in a #{player_count} player game",
+           %{player_count: player_count} do
+        players =
+          for player_number <- 1..player_count do
+            Player.new("player#{player_number}")
+          end
+
+        table = Table.new(players)
+        second_player_position = 2
+
+        queens = [
+          %QueenCard{value: 20, special?: false, name: ""},
+          %QueenCard{value: 10, special?: false, name: ""},
+          %QueenCard{value: 10, special?: false, name: ""},
+          %QueenCard{value: 10, special?: false, name: ""}
+        ]
+
+        table = update_player_queens_with(table, second_player_position, queens)
+
+        {:win, ^second_player_position} = Table.win_check(table)
+      end
+
+      @tag player_count: player_count
+      test "reports win when player has <50 points but 5 queens in a #{player_count} player game",
+           %{player_count: player_count} do
+        players =
+          for player_number <- 1..player_count do
+            Player.new("player#{player_number}")
+          end
+
+        table = Table.new(players)
+        second_player_position = 2
+
+        queens = [
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""}
+        ]
+
+        table = update_player_queens_with(table, second_player_position, queens)
+
+        {:win, ^second_player_position} = Table.win_check(table)
+      end
+    end
+
+    for player_count <- 4..5 do
+      @tag player_count: player_count
+      test "reports win when player has <4 queens but 40 points in a #{player_count} player game",
+           %{player_count: player_count} do
+        players =
+          for player_number <- 1..player_count do
+            Player.new("player#{player_number}")
+          end
+
+        table = Table.new(players)
+        second_player_position = 2
+
+        queens = [
+          %QueenCard{value: 20, special?: false, name: ""},
+          %QueenCard{value: 10, special?: false, name: ""},
+          %QueenCard{value: 10, special?: false, name: ""}
+        ]
+
+        table = update_player_queens_with(table, second_player_position, queens)
+
+        {:win, ^second_player_position} = Table.win_check(table)
+      end
+
+      @tag player_count: player_count
+      test "reports win when player has <40 points but 4 queens in a #{player_count} player game",
+           %{player_count: player_count} do
+        players =
+          for player_number <- 1..player_count do
+            Player.new("player#{player_number}")
+          end
+
+        table = Table.new(players)
+        second_player_position = 2
+
+        queens = [
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""},
+          %QueenCard{value: 5, special?: false, name: ""}
+        ]
+
+        table = update_player_queens_with(table, second_player_position, queens)
+
+        {:win, ^second_player_position} = Table.win_check(table)
+      end
+    end
+  end
+
   ###
   # Private Functions
   #
@@ -724,6 +828,18 @@ defmodule TableTest do
 
   defp get_queen(player, queen_position),
     do: Enum.at(player.queens, queen_position - 1)
+
+  defp update_player_queens_with(table, player_position, new_queens) do
+    update_in(table.players, fn players ->
+      Enum.map(players, fn player ->
+        if player.position == player_position do
+          %{player | queens: new_queens}
+        else
+          player
+        end
+      end)
+    end)
+  end
 
   defp update_player_hand(table, player_position, new_hand) do
     table.players
