@@ -201,4 +201,42 @@ defmodule PlayerTest do
       end
     end
   end
+
+  describe "calculate_score/1" do
+    test "returns expected scores" do
+      player = Player.new("name")
+
+      assert 5 ==
+               player
+               |> Map.put(:queens, [
+                 %QueenCard{value: 5, special?: false, name: ""}
+               ])
+               |> Player.calculate_score()
+
+      assert 20 ==
+               player
+               |> Map.put(:queens, [
+                 %QueenCard{value: 20, special?: false, name: ""}
+               ])
+               |> Player.calculate_score()
+
+      assert 35 ==
+               player
+               |> Map.put(:queens, [
+                 %QueenCard{value: 20, special?: false, name: ""},
+                 %QueenCard{value: 10, special?: false, name: ""},
+                 %QueenCard{value: 5, special?: false, name: ""}
+               ])
+               |> Player.calculate_score()
+
+      assert 40 ==
+               player
+               |> Map.put(:queens, [
+                 %QueenCard{value: 20, special?: false, name: ""},
+                 %QueenCard{value: 10, special?: false, name: ""},
+                 %QueenCard{value: 10, special?: false, name: ""}
+               ])
+               |> Player.calculate_score()
+    end
+  end
 end

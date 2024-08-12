@@ -78,6 +78,10 @@ defmodule SleepingQueensEngine.Player do
     end
   end
 
+  @spec calculate_score(Player.t()) :: integer()
+  def calculate_score(player),
+    do: player.queens |> Enum.map(& &1.value) |> Enum.sum()
+
   ###
   # Private Functions
   #
