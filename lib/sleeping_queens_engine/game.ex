@@ -79,6 +79,8 @@ defmodule SleepingQueensEngine.Game do
   def put_queen_back(game, queen_coordinate),
     do: GenServer.call(game, {:put_queen_back, queen_coordinate})
 
+  def restart_game(game), do: GenServer.call(game, :restart_game)
+
   ###
   # Server Callbacks
   #
@@ -470,6 +472,36 @@ defmodule SleepingQueensEngine.Game do
   end
 
   @impl true
+  def handle_call(:restart_game, _from, state) do
+    table = Table.new([])
+    rules = Rules.new()
+
+    reset_players =
+      state.table.players
+      |> reset_hands_and_queens()
+      |> increment_players_positions(state.rules.player_count)
+      |> Enum.sort_by(& &1.position, :asc)
+
+    starting_acc = {table, rules}
+
+    {table, rules} =
+      Enum.reduce(reset_players, starting_acc, fn player,
+                                                  {table_acc, rules_acc} = acc ->
+        with {:ok, updated_rules} <- Rules.check(rules_acc, :add_player),
+             {:ok, updated_table} <- Table.add_player(table_acc, player) do
+          {updated_table, updated_rules}
+        else
+          _ -> acc
+        end
+      end)
+
+    state
+    |> update_rules(rules)
+    |> update_table(table)
+    |> reply(:ok)
+  end
+
+  @impl true
   def handle_call(_, _from, state) do
     reply(state, :error)
   end
@@ -492,4 +524,22 @@ defmodule SleepingQueensEngine.Game do
 
     win_or_no_win
   end
+
+  defp reset_hands_and_queens(players) do
+    Enum.map(players, fn player ->
+      %{player | hand: [], queens: []}
+    end)
+  end
+
+  defp increment_players_positions(players, player_count) do
+    Enum.map(players, fn player ->
+      %{player | position: incremented_position(player.position, player_count)}
+    end)
+  end
+
+  defp incremented_position(position, player_count)
+       when position == player_count,
+       do: 1
+
+  defp incremented_position(position, _), do: position + 1
 end

@@ -8,6 +8,7 @@ defmodule GameTest do
 
   @max_allowed_players 5
   @max_allowed_cards_in_hand 5
+  @expected_draw_pile_size 68
 
   describe "initialization" do
     test "accepts a string game_id on start" do
@@ -939,15 +940,17 @@ defmodule GameTest do
   # Scenarios
   # Player selects a queen (from a king or a jester)
   # Player steals a queen from an opponent
-  describe "win check/1" do
-    test "successfully ends 2-3 player game when player selects a queen to win by 50 points" do
+  describe "restart_game/1" do
+    test "resets the table as needed and increments each player position by one" do
       pid = start_supervised!({Game, "game_id"})
 
       Game.add_player(pid, "player1")
       Game.add_player(pid, "player2")
+      Game.add_player(pid, "player3")
       Game.start_game(pid)
       player_position = 1
 
+      # set player queens
       queens = [
         %QueenCard{value: 20, special?: false, name: ""},
         %QueenCard{value: 10, special?: false, name: ""},
@@ -956,22 +959,61 @@ defmodule GameTest do
 
       replace_player_queens_with(pid, player_position, queens)
 
+      # set next queen to draw
       queen_card = %QueenCard{value: 10, special?: false, name: ""}
       queen_coordinate = {1, 1}
       place_queen_on_board_at_location(pid, queen_card, queen_coordinate)
-
-      assert %{rules: %{state: :playing}} = Game.get_state(pid)
 
       set_waiting_on(pid, %{
         action: :select_queen,
         player_position: player_position
       })
 
-      # Test/Assert
+      # Draw the queen to end the game
+      %{rules: %{state: :playing}} = Game.get_state(pid)
       {row, col} = queen_coordinate
-      assert :ok = Game.select_queen(pid, player_position, row, col)
+      :ok = Game.select_queen(pid, player_position, row, col)
+      %{rules: %{state: :game_over}} = Game.get_state(pid)
 
-      assert %{rules: %{state: :game_over}} = Game.get_state(pid)
+      # Test/Assert
+      assert :ok = Game.restart_game(pid)
+
+      game_state = Game.get_state(pid)
+      rules = game_state.rules
+      table = game_state.table
+
+      # rules
+      assert %{
+               state: :initialized,
+               player_count: 3,
+               player_turn: 1,
+               waiting_on: nil,
+               queen_to_lose: nil
+             } = rules
+
+      # draw_pile, discard pile
+      assert length(table.draw_pile) == @expected_draw_pile_size
+      assert %{discard_pile: []} = table
+
+      # queens board
+      assert Enum.all?(table.queens_board, fn {_coord, queen} ->
+               not is_nil(queen)
+             end)
+
+      # player hand and queens
+      assert Enum.all?(table.players, &(&1.hand == [] and &1.queens == []))
+
+      # players positions incremented correctly
+      assert Enum.find(table.players, &(&1.name == "player1")).position == 2
+      assert Enum.find(table.players, &(&1.name == "player2")).position == 3
+      assert Enum.find(table.players, &(&1.name == "player3")).position == 1
+
+      # players positions are valid
+      player_positions = Enum.map(table.players, & &1.position)
+      unique_player_positions = Enum.uniq(player_positions)
+
+      assert Enum.sort(player_positions) == Enum.sort(unique_player_positions)
+      assert Enum.all?(player_positions, &(&1 in 1..rules.player_count))
     end
   end
 
