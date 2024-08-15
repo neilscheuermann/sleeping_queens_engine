@@ -70,8 +70,7 @@ defmodule SleepingQueensEngine.Game do
            opponent_queen_position}
         )
 
-  # # TODO::: Add tests
-  # def protect_queen(game), do: GenServer.call(game, :protect_queen)
+  def protect_queen(game), do: GenServer.call(game, :protect_queen)
 
   def lose_queen(game), do: GenServer.call(game, :lose_queen)
 
@@ -321,46 +320,49 @@ defmodule SleepingQueensEngine.Game do
     end
   end
 
-  # @impl true
-  # def handle_call(
-  #       :protect_queen,
-  #       _from,
-  #       #  wating on the player to block the steal, but they chose not to
-  #       %{rules: %{waiting_on: %{action: action}}} = state
-  #     )
-  #     when action in [:block_steal_queen, :block_place_queen_back_on_board] do
-  #   # No next action needed because the player get's the opponent's queen
-  #   next_waiting_on = nil
-  #   next_queen_to_lose = nil
-  #
-  #   opponent_position = state.rules.waiting_on.player_position
-  #   opponent_queen_position = state.rules.queen_to_lose.queen_position
-  #   player_position = state.rules.player_turn
-  #
-  #   with {:ok, rules} <-
-  #          Rules.check(
-  #            state.rules,
-  #            # hack to get Rules.check to pass so I can update waiting_on and queen_to_lose
-  #            {:play, state.rules.waiting_on.player_position, next_waiting_on,
-  #             next_queen_to_lose}
-  #          ),
-  #        {:ok, table} <-
-  #          Table.steal_queen(
-  #            state.table,
-  #            opponent_position,
-  #            opponent_queen_position,
-  #            player_position
-  #          ),
-  #        {:ok, rules} <- Rules.check(rules, :deal_cards),
-  #        table <- Table.deal_cards(table, state.rules.player_turn) do
-  #     state
-  #     |> update_rules(rules)
-  #     |> update_table(table)
-  #     |> reply(:ok)
-  #   else
-  #     _ -> reply(state, :error)
-  #   end
-  # end
+  @impl true
+  def handle_call(
+        :protect_queen,
+        _from,
+        %{rules: %{waiting_on: %{action: action}}} = state
+      )
+      when action in [:block_steal_queen, :block_place_queen_back_on_board] do
+    # No next action needed because the player blocks the attempt
+    next_waiting_on = nil
+    next_queen_to_lose = nil
+
+    player_position = state.rules.waiting_on.player_position
+
+    needed_defense_card_type =
+      case action do
+        :block_steal_queen -> :dragon
+        :block_place_queen_back_on_board -> :wand
+      end
+
+    with {:ok, rules} <-
+           Rules.check(
+             state.rules,
+             # hack to get Rules.check to pass so I can update waiting_on and queen_to_lose
+             {:play, player_position, next_waiting_on, next_queen_to_lose}
+           ),
+         card_position when card_position in 1..5 <-
+           Table.player_card_position_for_type(
+             state.table,
+             player_position,
+             needed_defense_card_type
+           ),
+         {:ok, table} <-
+           Table.discard_cards(state.table, [card_position], player_position),
+         {:ok, rules} <- Rules.check(rules, :deal_cards),
+         table <- Table.deal_cards(table, state.rules.player_turn) do
+      state
+      |> update_rules(rules)
+      |> update_table(table)
+      |> reply(:ok)
+    else
+      _ -> reply(state, :error)
+    end
+  end
 
   # lose queen to a knight (stolen)
   @impl true

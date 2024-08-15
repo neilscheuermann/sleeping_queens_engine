@@ -819,6 +819,91 @@ defmodule TableTest do
     end
   end
 
+  describe "player_card_position_for_type/3" do
+    setup do
+      player1 = Player.new("Ron")
+      player2 = Player.new("Leslie")
+      players = [player1, player2]
+      table = Table.new(players)
+
+      %{
+        table: table
+      }
+    end
+
+    test "returns first matching card position (nil if no match)", %{
+      table: table
+    } do
+      player_position = 1
+
+      new_hand = [
+        %Card{type: :wand, name: nil},
+        %Card{type: :number, name: nil, value: 1},
+        %Card{type: :dragon, name: nil},
+        %Card{type: :number, name: nil, value: 2},
+        %Card{type: :jester, name: nil}
+      ]
+
+      table = replace_player_hand_with(table, player_position, new_hand)
+
+      assert nil ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :not_a_type
+               )
+
+      assert nil ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :king
+               )
+
+      assert 1 ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :wand
+               )
+
+      assert 2 ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :number
+               )
+
+      assert 3 ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :dragon
+               )
+
+      assert 5 ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :jester
+               )
+    end
+
+    test "returns nil if no cards", %{table: table} do
+      player_position = 1
+
+      new_hand = []
+      table = replace_player_hand_with(table, player_position, new_hand)
+
+      assert nil ==
+               Table.player_card_position_for_type(
+                 table,
+                 player_position,
+                 :jester
+               )
+    end
+  end
+
   ###
   # Private Functions
   #
@@ -845,6 +930,18 @@ defmodule TableTest do
     table.players
     |> Enum.find(&(&1.position == player_position))
     |> update_in([Access.key!(:hand)], fn _hand -> new_hand end)
+  end
+
+  defp replace_player_hand_with(table, player_position, new_hand) do
+    update_in(table.players, fn players ->
+      Enum.map(players, fn player ->
+        if player.position == player_position do
+          %{player | hand: new_hand}
+        else
+          player
+        end
+      end)
+    end)
   end
 
   defp update_draw_pile(table, updated_draw_pile) do

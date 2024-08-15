@@ -307,6 +307,21 @@ defmodule SleepingQueensEngine.Table do
     end
   end
 
+  @doc """
+  Returns the card position (1-5) of the matching card type, or nil if not found
+  """
+  @spec player_card_position_for_type(Table.t(), player_position(), atom()) ::
+          player_position() | nil
+  def player_card_position_for_type(table, player_position, card_type) do
+    card_index =
+      table.players
+      |> Enum.find(&(&1.position == player_position))
+      |> Map.get(:hand)
+      |> Enum.find_index(&(&1.type == card_type))
+
+    if is_nil(card_index), do: nil, else: card_index + 1
+  end
+
   ###
   # Private Functions
   #

@@ -1,6 +1,7 @@
 defmodule GameTest do
   use ExUnit.Case
 
+  alias SleepingQueensEngine.Card
   alias SleepingQueensEngine.Game
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
@@ -140,12 +141,12 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :number,
           name: nil,
           value: 5
         },
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :knight,
           name: nil,
           value: nil
@@ -231,12 +232,12 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :number,
           name: nil,
           value: 5
         },
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :knight,
           name: nil,
           value: nil
@@ -277,7 +278,7 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :king,
           name: "name1"
         }
@@ -305,7 +306,7 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :number,
           name: nil,
           value: 5
@@ -334,7 +335,7 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :king,
           name: "name1"
         }
@@ -367,7 +368,7 @@ defmodule GameTest do
       } = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :king,
           name: "name1"
         }
@@ -398,7 +399,7 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :number,
           name: nil,
           value: 5
@@ -422,7 +423,7 @@ defmodule GameTest do
       %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
 
       new_hand = [
-        %SleepingQueensEngine.Card{
+        %Card{
           type: :king,
           name: "name1"
         }
@@ -581,7 +582,7 @@ defmodule GameTest do
         player_position: player_turn
       })
 
-      replace_draw_pile_with(pid, %SleepingQueensEngine.Card{
+      replace_draw_pile_with(pid, %Card{
         type: :number,
         name: nil,
         value: 1
@@ -615,7 +616,7 @@ defmodule GameTest do
       })
 
       replace_player_hand_with(pid, player_turn, [])
-      replace_draw_pile_with(pid, %SleepingQueensEngine.Card{type: :wand})
+      replace_draw_pile_with(pid, %Card{type: :wand})
 
       assert :ok = Game.draw_for_jester(pid, player_turn)
 
@@ -767,6 +768,76 @@ defmodule GameTest do
                    opponent_position,
                    1
                  )
+      end
+    end
+  end
+
+  describe "protect_queen/1" do
+    test "successfully protects queen, updating both waiting on and queen to lose to nil" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+      player_position = 1
+      opponent_position = 2
+
+      # set_player_turn(pid, opponent_position)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_position
+      })
+
+      row = 1
+      col = 1
+      :ok = Game.select_queen(pid, player_position, row, col)
+
+      player_queen_position = 1
+
+      set_waiting_on(pid, %{
+        action: :steal_queen,
+        player_position: opponent_position
+      })
+
+      :ok =
+        Game.select_opponent_queen(
+          pid,
+          opponent_position,
+          player_position,
+          player_queen_position
+        )
+
+      for waiting_on_action <- [
+            :block_steal_queen,
+            :block_place_queen_back_on_board
+          ] do
+        set_waiting_on(pid, %{
+          action: waiting_on_action,
+          player_position: player_position
+        })
+
+        new_hand = [
+          %Card{
+            type: :dragon,
+            name: nil
+          },
+          %Card{
+            type: :wand,
+            name: nil
+          }
+        ]
+
+        replace_player_hand_with(pid, player_position, new_hand)
+
+        assert :ok = Game.protect_queen(pid)
+
+        assert %{
+                 rules: %{
+                   waiting_on: nil,
+                   queen_to_lose: nil
+                 }
+               } = Game.get_state(pid)
       end
     end
   end
