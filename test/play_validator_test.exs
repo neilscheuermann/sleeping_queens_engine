@@ -567,7 +567,8 @@ defmodule PlayValidatorTest do
   defp setup_select_queen_for_player(
          %{select_queen_for_player: player_position} = ctx
        ) do
-    {:ok, table} = Table.select_queen(ctx.table, {1, 1}, player_position)
+    {:ok, table, _next_waiting_on} =
+      Table.select_queen(ctx.table, {1, 1}, player_position)
 
     [table: table]
   end

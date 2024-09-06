@@ -78,6 +78,10 @@ defmodule SleepingQueensEngine.Game do
   def put_queen_back(game, queen_coordinate),
     do: GenServer.call(game, {:put_queen_back, queen_coordinate})
 
+  # TODO::: Add tests
+  def acknowledge(game, player_position),
+    do: GenServer.call(game, {:acknowledge, player_position})
+
   def restart_game(game), do: GenServer.call(game, :restart_game)
 
   ###
@@ -238,17 +242,19 @@ defmodule SleepingQueensEngine.Game do
     with %{action: :select_queen, player_position: waiting_player_position}
          when waiting_player_position == player_position <-
            state.rules.waiting_on,
-         {:ok, table} <-
+         {:ok, table, next_waiting_on} <-
            Table.select_queen(
              state.table,
              {row, col},
              player_position
            ),
          {:ok, rules} <-
-           Rules.check(state.rules, {:play, player_position, nil, nil}),
-         {:ok, rules} <- Rules.check(rules, :deal_cards),
+           Rules.check(
+             state.rules,
+             {:play, player_position, next_waiting_on, nil}
+           ),
          {:ok, rules} <- Rules.check(rules, {:win_check, win_or_no_win(table)}),
-         table <- Table.deal_cards(table, state.rules.player_turn) do
+         {:ok, table, rules} = deal_cards_unless_won_or_waiting_on(table, rules) do
       state
       |> update_rules(rules)
       |> update_table(table)
@@ -474,6 +480,24 @@ defmodule SleepingQueensEngine.Game do
   end
 
   @impl true
+  def handle_call({:acknowledge, player_position}, _from, state) do
+    next_waiting_on = nil
+    next_queen_to_lose = nil
+
+    with {:ok, rules} <-
+           Rules.check(
+             state.rules,
+             {:play, player_position, next_waiting_on, next_queen_to_lose}
+           ) do
+      state
+      |> update_rules(rules)
+      |> reply(:ok)
+    else
+      _ -> reply(state, :error)
+    end
+  end
+
+  @impl true
   def handle_call(:restart_game, _from, state) do
     table = Table.new([])
     rules = Rules.new()
@@ -544,4 +568,23 @@ defmodule SleepingQueensEngine.Game do
        do: 1
 
   defp incremented_position(position, _), do: position + 1
+
+  defp deal_cards_unless_won_or_waiting_on(table, %{state: :game_over} = rules) do
+    {:ok, table, rules}
+  end
+
+  defp deal_cards_unless_won_or_waiting_on(
+         table,
+         %{waiting_on: waiting_on} = rules
+       )
+       when not is_nil(waiting_on) do
+    {:ok, table, rules}
+  end
+
+  defp deal_cards_unless_won_or_waiting_on(table, rules) do
+    with {:ok, updated_rules} <- Rules.check(rules, :deal_cards),
+         updated_table <- Table.deal_cards(table, rules.player_turn) do
+      {:ok, updated_table, updated_rules}
+    end
+  end
 end

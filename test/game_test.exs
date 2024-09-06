@@ -452,8 +452,16 @@ defmodule GameTest do
         player_position: player_turn
       })
 
+      # place non-special queen on the board to consistently return a nil waiting_on
+      queen_card = %QueenCard{
+        name: "non_special_queen",
+        value: 5,
+        special?: false
+      }
+
       row = 1
       col = 1
+      place_queen_on_board_at_location(pid, queen_card, {row, col})
 
       assert :ok = Game.select_queen(pid, player_turn, row, col)
 
@@ -475,6 +483,97 @@ defmodule GameTest do
       for player <- updated_players do
         assert length(player.hand) == @max_allowed_cards_in_hand
       end
+    end
+
+    test "leaves queen on board, sets correct waiting on when player has dog or cat queen and selects the other, and does not advance player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      queens = [%QueenCard{name: "cat", value: 15, special?: true}]
+      replace_player_queens_with(pid, player_turn, queens)
+
+      queen_card = %QueenCard{name: "dog", value: 15, special?: true}
+      queen_coordinate = {1, 1}
+      place_queen_on_board_at_location(pid, queen_card, queen_coordinate)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn
+      })
+
+      {row, col} = queen_coordinate
+      assert :ok = Game.select_queen(pid, player_turn, row, col)
+
+      %{table: %{players: players, queens_board: queens_board}} =
+        Game.get_state(pid)
+
+      # Leaves queen on the board
+      assert Map.get(queens_board, queen_coordinate) == queen_card
+
+      assert [%QueenCard{name: "cat"}] =
+               players
+               |> Enum.find(&(&1.position == player_turn))
+               |> Map.get(:queens)
+
+      # sets correct next waiting_on
+      assert %{
+               rules: %{
+                 waiting_on: %{
+                   action: :acknowledge_blocked_by_dog_or_cat_queen,
+                   player_position: ^player_turn
+                 },
+                 player_turn: ^player_turn
+               }
+             } = Game.get_state(pid)
+    end
+
+    test "selects the rose queen, sets correct waiting on, and does not advance player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      queen_card = %QueenCard{name: "rose", value: 5, special?: true}
+      queen_coordinate = {1, 1}
+      place_queen_on_board_at_location(pid, queen_card, queen_coordinate)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn
+      })
+
+      {row, col} = queen_coordinate
+      assert :ok = Game.select_queen(pid, player_turn, row, col)
+
+      %{table: %{players: players, queens_board: queens_board}} =
+        Game.get_state(pid)
+
+      # Selected the queen from the board
+      refute Map.get(queens_board, queen_coordinate)
+
+      assert [%QueenCard{name: "rose"}] =
+               players
+               |> Enum.find(&(&1.position == player_turn))
+               |> Map.get(:queens)
+
+      # sets correct next waiting_on and doesn't advance player turn
+      assert %{
+               rules: %{
+                 waiting_on: %{
+                   action: :select_another_queen_from_rose,
+                   player_position: ^player_turn
+                 },
+                 player_turn: ^player_turn
+               }
+             } = Game.get_state(pid)
     end
 
     test "successfully ends game when player selects enough queens" do

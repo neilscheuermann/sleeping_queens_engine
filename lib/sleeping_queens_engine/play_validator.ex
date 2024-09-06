@@ -1,6 +1,6 @@
 defmodule SleepingQueensEngine.PlayValidator do
   @moduledoc """
-  Determines if plays are valid
+  Determines if plays are valid and determines the next move required
   """
 
   alias SleepingQueensEngine.Card

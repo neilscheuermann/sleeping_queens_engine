@@ -138,16 +138,33 @@ defmodule SleepingQueensEngine.Table do
   end
 
   @spec select_queen(Table.t(), queen_coordinate(), player_position()) ::
-          {:ok, Table.t()} | {:error, select_queen_error()}
+          {:ok, Table.t(), nil | waiting_on()} | {:error, select_queen_error()}
   def select_queen(table, {_, _} = coordinate, player_position) do
     case QueensBoard.take_queen(table.queens_board, coordinate) do
       {%QueenCard{} = selected_queen, updated_queens_board} ->
-        updated_table =
-          table
-          |> update_queens_board(updated_queens_board)
-          |> update_players_with_new_queen(selected_queen, player_position)
+        if selected_queen.name in ["cat", "dog"] and
+             player_has_other_queen?(selected_queen, table, player_position) do
+          next_waiting_on =
+            determine_next_waiting_on_from_queen(
+              selected_queen,
+              player_position
+            )
 
-        {:ok, updated_table}
+          {:ok, table, next_waiting_on}
+        else
+          updated_table =
+            table
+            |> update_queens_board(updated_queens_board)
+            |> update_players_with_new_queen(selected_queen, player_position)
+
+          next_waiting_on =
+            determine_next_waiting_on_from_queen(
+              selected_queen,
+              player_position
+            )
+
+          {:ok, updated_table, next_waiting_on}
+        end
 
       {nil, _updated_queens_board} ->
         {:error, :no_queen_at_that_position}
@@ -252,9 +269,9 @@ defmodule SleepingQueensEngine.Table do
       |> maybe_update_discard_pile(top_card)
       |> maybe_update_players_hand(top_card, player_position)
 
-    waiting_on = determine_next_waiting_on(rules, top_card)
+    next_waiting_on = determine_next_waiting_on_from_jester(rules, top_card)
 
-    {:ok, updated_table, waiting_on}
+    {:ok, updated_table, next_waiting_on}
   end
 
   def draw_for_jester(_table, _waiting_on, _player_position) do
@@ -454,7 +471,7 @@ defmodule SleepingQueensEngine.Table do
     end)
   end
 
-  defp determine_next_waiting_on(rules, card_from_jester) do
+  defp determine_next_waiting_on_from_jester(rules, card_from_jester) do
     if card_from_jester.type == :number do
       %{
         action: :select_queen,
@@ -465,6 +482,29 @@ defmodule SleepingQueensEngine.Table do
       nil
     end
   end
+
+  defp determine_next_waiting_on_from_queen(
+         %QueenCard{name: name},
+         player_position
+       )
+       when name in ["cat", "dog"] do
+    %{
+      action: :acknowledge_blocked_by_dog_or_cat_queen,
+      player_position: player_position
+    }
+  end
+
+  defp determine_next_waiting_on_from_queen(
+         %QueenCard{name: "rose"},
+         player_position
+       ) do
+    %{
+      action: :select_another_queen_from_rose,
+      player_position: player_position
+    }
+  end
+
+  defp determine_next_waiting_on_from_queen(_, _), do: nil
 
   defp count_players_to_select_queen(rules, positions_to_count) do
     Enum.reduce(1..positions_to_count, rules.player_turn, fn count, acc ->
@@ -515,5 +555,20 @@ defmodule SleepingQueensEngine.Table do
     |> Enum.sort_by(& &1.score, :desc)
     |> List.first()
     |> Map.get(:position)
+  end
+
+  defp player_has_other_queen?(%QueenCard{name: "cat"}, table, player_position),
+    do: player_has_queen?("dog", table, player_position)
+
+  defp player_has_other_queen?(%QueenCard{name: "dog"}, table, player_position),
+    do: player_has_queen?("cat", table, player_position)
+
+  defp player_has_other_queen?(_, _, _), do: false
+
+  defp player_has_queen?(queen_name, table, player_position) do
+    table.players
+    |> Enum.find(&(&1.position == player_position))
+    |> Map.get(:queens)
+    |> Enum.any?(&(&1.name == queen_name))
   end
 end

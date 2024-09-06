@@ -255,12 +255,92 @@ defmodule TableTest do
       %{table: table}
     end
 
+    test "success: if selecting dog queen when already have cat queen (and vice versa) returns the table unchanged and an updated waiting_on to notify player",
+         %{table: table} do
+      for {queen_name_in_hand, queen_name_on_board} <- [
+            {"cat", "dog"},
+            {"dog", "cat"}
+          ] do
+        # add dog or cat queen to player's hand
+        player1_queens = [
+          %QueenCard{name: queen_name_in_hand, value: 15, special?: true}
+        ]
+
+        table =
+          update_player_queens_with(table, @player1_position, player1_queens)
+
+        # put other on table
+        queen_card = %QueenCard{
+          name: queen_name_on_board,
+          value: 15,
+          special?: true
+        }
+
+        table =
+          place_queen_on_board_at_location(table, queen_card, @queen_coordinate)
+
+        # try to pick up other queen
+        assert {:ok, updated_table, next_waiting_on} =
+                 Table.select_queen(table, @queen_coordinate, @player1_position)
+
+        player1 =
+          Enum.find(updated_table.players, &(&1.position == @player1_position))
+
+        assert [
+                 %QueenCard{
+                   name: ^queen_name_in_hand,
+                   value: 15,
+                   special?: true
+                 }
+               ] = player1.queens
+
+        # make sure queen remains on board
+        assert %QueenCard{name: ^queen_name_on_board} =
+                 updated_table.queens_board[@queen_coordinate]
+
+        # and next waiting on prompts the player to acknowledge they couldn't pick up the queen
+        assert %{
+                 action: :acknowledge_blocked_by_dog_or_cat_queen,
+                 player_position: @player1_position
+               } = next_waiting_on
+      end
+    end
+
+    test "success: if selecting rose queen it returns updated table and updated waiting_on to notify player to select another queen",
+         %{table: table} do
+      # put rose queen on table
+      queen_card = %QueenCard{name: "rose", value: 5, special?: true}
+
+      table =
+        place_queen_on_board_at_location(table, queen_card, @queen_coordinate)
+
+      # pick it up
+      assert {:ok, updated_table, next_waiting_on} =
+               Table.select_queen(table, @queen_coordinate, @player1_position)
+
+      # assert player picked up the rose queen
+      player1 =
+        Enum.find(updated_table.players, &(&1.position == @player1_position))
+
+      assert [%QueenCard{name: "rose", value: 5, special?: true}] =
+               player1.queens
+
+      # no more queen at that position
+      refute updated_table.queens_board[@queen_coordinate]
+
+      # and next waiting on prompts the player to acknowledge they couldn't pick up the queen
+      assert %{
+               action: :select_another_queen_from_rose,
+               player_position: @player1_position
+             } = next_waiting_on
+    end
+
     test "success: returns an updated table, having moved selected queen from board to player's queens pile",
          %{table: table} do
       assert %QueenCard{} = table.queens_board[@queen_coordinate]
       assert Enum.all?(table.players, &(&1.queens == []))
 
-      assert {:ok, updated_table} =
+      assert {:ok, updated_table, _next_waiting_on} =
                Table.select_queen(table, @queen_coordinate, @player1_position)
 
       updated_player1 =
@@ -272,7 +352,7 @@ defmodule TableTest do
 
     test "error: returns error if no queen at valid coordinate",
          %{table: table} do
-      assert {:ok, updated_table} =
+      assert {:ok, updated_table, _next_waiting_on} =
                Table.select_queen(
                  table,
                  @queen_coordinate,
@@ -310,7 +390,7 @@ defmodule TableTest do
         |> Table.deal_cards()
 
       # select queen and confirm it is with player1 and not on the board
-      {:ok, table} =
+      {:ok, table, _} =
         Table.select_queen(table, @queen_coordinate, @player1_position)
 
       player_queen =
@@ -396,7 +476,7 @@ defmodule TableTest do
         |> Table.deal_cards()
 
       # select queen and confirm it is with player1 and not on the board
-      {:ok, table} =
+      {:ok, table, _} =
         Table.select_queen(table, @queen_coordinate, @player1_position)
 
       player_queen =
@@ -684,7 +764,8 @@ defmodule TableTest do
       current_player = Enum.at(table.players, 0)
       other_player = Enum.at(table.players, 1)
 
-      {:ok, table} = Table.select_queen(table, {1, 1}, other_player.position)
+      {:ok, table, _} =
+        Table.select_queen(table, {1, 1}, other_player.position)
 
       assert Table.others_have_a_queen?(table, current_player.position)
     end
@@ -694,8 +775,11 @@ defmodule TableTest do
       other_player1 = Enum.at(table.players, 1)
       other_player2 = Enum.at(table.players, 2)
 
-      {:ok, table} = Table.select_queen(table, {1, 1}, other_player1.position)
-      {:ok, table} = Table.select_queen(table, {1, 2}, other_player2.position)
+      {:ok, table, _} =
+        Table.select_queen(table, {1, 1}, other_player1.position)
+
+      {:ok, table, _} =
+        Table.select_queen(table, {1, 2}, other_player2.position)
 
       assert Table.others_have_a_queen?(table, current_player.position)
     end
@@ -703,7 +787,8 @@ defmodule TableTest do
     test "false when current player has a queen", %{table: table} do
       current_player = Enum.at(table.players, 0)
 
-      {:ok, table} = Table.select_queen(table, {1, 1}, current_player.position)
+      {:ok, table, _} =
+        Table.select_queen(table, {1, 1}, current_player.position)
 
       refute Table.others_have_a_queen?(table, current_player.position)
     end
@@ -950,5 +1035,11 @@ defmodule TableTest do
 
   defp update_players(table, updated_players) do
     update_in(table.players, fn _players -> updated_players end)
+  end
+
+  defp place_queen_on_board_at_location(table, queen_card, queen_coordinate) do
+    update_in(table.queens_board, fn queens_board ->
+      Map.replace(queens_board, queen_coordinate, queen_card)
+    end)
   end
 end

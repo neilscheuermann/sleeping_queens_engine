@@ -19,6 +19,8 @@ defmodule SleepingQueensEngine.Rules do
           | :steal_queen
           | :place_queen_back_on_board
           | :pick_spot_to_return_queen
+          | :acknowledge_blocked_by_dog_or_cat_queen
+          | :select_another_queen_from_rose
   @type waiting_on() :: %{
           player_position: player_position(),
           action: waiting_on_actions()
@@ -27,6 +29,7 @@ defmodule SleepingQueensEngine.Rules do
           player_position: pos_integer(),
           queen_position: pos_integer()
         }
+
   defstruct state: :initialized,
             player_count: 0,
             player_turn: 1,
