@@ -176,6 +176,32 @@ defmodule TableTest do
       assert [_, _, _, %Card{value: 2}, %Card{value: 4}] = player3.hand
       assert table.draw_pile == []
     end
+
+    test "successfully reshuffles the deck and finishes dealing when draw pile runs out" do
+      table = Table.new([Player.new("Ron"), Player.new("Leslie")])
+
+      [first_card | rest] = table.draw_pile
+
+      table =
+        table
+        |> update_draw_pile([first_card])
+        |> update_discard_pile(rest)
+
+      assert Enum.all?(table.players, &(&1.hand == []))
+      assert length(table.draw_pile) == 1
+      assert length(table.discard_pile) == @expected_draw_pile_size - 1
+
+      table = Table.deal_cards(table)
+
+      assert Enum.all?(
+               table.players,
+               &(length(&1.hand) == @max_allowed_cards_in_hand)
+             )
+
+      assert length(table.draw_pile) ==
+               @expected_draw_pile_size -
+                 length(table.players) * @max_allowed_cards_in_hand
+    end
   end
 
   describe "discard_cards/3" do
@@ -1051,6 +1077,10 @@ defmodule TableTest do
 
   defp update_draw_pile(table, updated_draw_pile) do
     update_in(table.draw_pile, fn _draw_pile -> updated_draw_pile end)
+  end
+
+  defp update_discard_pile(table, updated_discard_pile) do
+    update_in(table.discard_pile, fn _discard_pile -> updated_discard_pile end)
   end
 
   defp update_players(table, updated_players) do
