@@ -350,6 +350,27 @@ defmodule TableTest do
       assert [%QueenCard{}] = updated_player1.queens
     end
 
+    test "success: if selecting a dog queen as first queen returns an updated table, having moved selected queen from board to player's queens pile",
+         %{table: table} do
+      # put rose queen on table
+      queen_card = %QueenCard{name: "dog", value: 15, special?: true}
+
+      table =
+        place_queen_on_board_at_location(table, queen_card, @queen_coordinate)
+
+      assert %QueenCard{} = table.queens_board[@queen_coordinate]
+      assert Enum.all?(table.players, &(&1.queens == []))
+
+      assert {:ok, updated_table, nil} =
+               Table.select_queen(table, @queen_coordinate, @player1_position)
+
+      updated_player1 =
+        Enum.find(updated_table.players, &(&1.position == @player1_position))
+
+      refute updated_table.queens_board[@queen_coordinate]
+      assert [%QueenCard{}] = updated_player1.queens
+    end
+
     test "error: returns error if no queen at valid coordinate",
          %{table: table} do
       assert {:ok, updated_table, _next_waiting_on} =
@@ -764,8 +785,7 @@ defmodule TableTest do
       current_player = Enum.at(table.players, 0)
       other_player = Enum.at(table.players, 1)
 
-      {:ok, table, _} =
-        Table.select_queen(table, {1, 1}, other_player.position)
+      {:ok, table, _} = Table.select_queen(table, {1, 1}, other_player.position)
 
       assert Table.others_have_a_queen?(table, current_player.position)
     end

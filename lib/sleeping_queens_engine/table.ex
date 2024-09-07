@@ -142,29 +142,12 @@ defmodule SleepingQueensEngine.Table do
   def select_queen(table, {_, _} = coordinate, player_position) do
     case QueensBoard.take_queen(table.queens_board, coordinate) do
       {%QueenCard{} = selected_queen, updated_queens_board} ->
-        if selected_queen.name in ["cat", "dog"] and
-             player_has_other_queen?(selected_queen, table, player_position) do
-          next_waiting_on =
-            determine_next_waiting_on_from_queen(
-              selected_queen,
-              player_position
-            )
-
-          {:ok, table, next_waiting_on}
-        else
-          updated_table =
-            table
-            |> update_queens_board(updated_queens_board)
-            |> update_players_with_new_queen(selected_queen, player_position)
-
-          next_waiting_on =
-            determine_next_waiting_on_from_queen(
-              selected_queen,
-              player_position
-            )
-
-          {:ok, updated_table, next_waiting_on}
-        end
+        handle_selected_queen(
+          selected_queen,
+          updated_queens_board,
+          table,
+          player_position
+        )
 
       {nil, _updated_queens_board} ->
         {:error, :no_queen_at_that_position}
@@ -484,17 +467,6 @@ defmodule SleepingQueensEngine.Table do
   end
 
   defp determine_next_waiting_on_from_queen(
-         %QueenCard{name: name},
-         player_position
-       )
-       when name in ["cat", "dog"] do
-    %{
-      action: :acknowledge_blocked_by_dog_or_cat_queen,
-      player_position: player_position
-    }
-  end
-
-  defp determine_next_waiting_on_from_queen(
          %QueenCard{name: "rose"},
          player_position
        ) do
@@ -555,6 +527,36 @@ defmodule SleepingQueensEngine.Table do
     |> Enum.sort_by(& &1.score, :desc)
     |> List.first()
     |> Map.get(:position)
+  end
+
+  defp handle_selected_queen(
+         selected_queen,
+         updated_queens_board,
+         table,
+         player_position
+       ) do
+    if selected_queen.name in ["cat", "dog"] and
+         player_has_other_queen?(selected_queen, table, player_position) do
+      next_waiting_on = %{
+        action: :acknowledge_blocked_by_dog_or_cat_queen,
+        player_position: player_position
+      }
+
+      {:ok, table, next_waiting_on}
+    else
+      updated_table =
+        table
+        |> update_queens_board(updated_queens_board)
+        |> update_players_with_new_queen(selected_queen, player_position)
+
+      next_waiting_on =
+        determine_next_waiting_on_from_queen(
+          selected_queen,
+          player_position
+        )
+
+      {:ok, updated_table, next_waiting_on}
+    end
   end
 
   defp player_has_other_queen?(%QueenCard{name: "cat"}, table, player_position),

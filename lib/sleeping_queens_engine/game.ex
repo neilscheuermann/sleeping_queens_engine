@@ -239,8 +239,9 @@ defmodule SleepingQueensEngine.Game do
 
   @impl true
   def handle_call({:select_queen, player_position, row, col}, _from, state) do
-    with %{action: :select_queen, player_position: waiting_player_position}
-         when waiting_player_position == player_position <-
+    with %{action: action, player_position: waiting_player_position}
+         when action in [:select_queen, :select_another_queen_from_rose] and
+                waiting_player_position == player_position <-
            state.rules.waiting_on,
          {:ok, table, next_waiting_on} <-
            Table.select_queen(

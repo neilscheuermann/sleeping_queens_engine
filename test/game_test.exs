@@ -485,7 +485,53 @@ defmodule GameTest do
       end
     end
 
-    test "leaves queen on board, sets correct waiting on when player has dog or cat queen and selects the other, and does not advance player turn" do
+    test "successfully moves dog queen as first queen to player, deals cards, resets waiting_on, and advances player turn" do
+      pid = start_supervised!({Game, "game_id"})
+
+      Game.add_player(pid, "player1")
+      Game.add_player(pid, "player2")
+      Game.start_game(pid)
+
+      %{rules: %{player_turn: player_turn}} = Game.get_state(pid)
+
+      set_waiting_on(pid, %{
+        action: :select_queen,
+        player_position: player_turn
+      })
+
+      queen_card = %QueenCard{
+        name: "dog",
+        value: 15,
+        special?: true
+      }
+
+      row = 1
+      col = 1
+      place_queen_on_board_at_location(pid, queen_card, {row, col})
+
+      assert :ok = Game.select_queen(pid, player_turn, row, col)
+
+      %{
+        rules: %{player_turn: updated_player_turn, waiting_on: waiting_on},
+        table: %{players: updated_players, queens_board: queens_board}
+      } = Game.get_state(pid)
+
+      assert Map.get(queens_board, {row, col}) == nil
+
+      assert [%QueenCard{}] =
+               updated_players
+               |> Enum.find(&(&1.position == player_turn))
+               |> Map.get(:queens)
+
+      assert waiting_on == nil
+      assert updated_player_turn == player_turn + 1
+
+      for player <- updated_players do
+        assert length(player.hand) == @max_allowed_cards_in_hand
+      end
+    end
+
+    test "successfully leaves queen on board when selecting other dog/cat queen, sets correct waiting, and does not advance player turn" do
       pid = start_supervised!({Game, "game_id"})
 
       Game.add_player(pid, "player1")
@@ -532,7 +578,7 @@ defmodule GameTest do
              } = Game.get_state(pid)
     end
 
-    test "selects the rose queen, sets correct waiting on, and does not advance player turn" do
+    test "selects the rose queen, sets correct waiting on, does not advance player turn, and allows them to select again" do
       pid = start_supervised!({Game, "game_id"})
 
       Game.add_player(pid, "player1")
@@ -553,10 +599,10 @@ defmodule GameTest do
       {row, col} = queen_coordinate
       assert :ok = Game.select_queen(pid, player_turn, row, col)
 
-      %{table: %{players: players, queens_board: queens_board}} =
+      %{table: %{players: players, queens_board: queens_board}, rules: rules} =
         Game.get_state(pid)
 
-      # Selected the queen from the board
+      # Selected the rose queen from the board
       refute Map.get(queens_board, queen_coordinate)
 
       assert [%QueenCard{name: "rose"}] =
@@ -566,14 +612,33 @@ defmodule GameTest do
 
       # sets correct next waiting_on and doesn't advance player turn
       assert %{
-               rules: %{
-                 waiting_on: %{
-                   action: :select_another_queen_from_rose,
-                   player_position: ^player_turn
-                 },
-                 player_turn: ^player_turn
-               }
-             } = Game.get_state(pid)
+               waiting_on: %{
+                 action: :select_another_queen_from_rose,
+                 player_position: ^player_turn
+               },
+               player_turn: ^player_turn
+             } = rules
+
+      # Select the second queen
+      queen_coordinate = {1, 2}
+
+      {row, col} = queen_coordinate
+      assert :ok = Game.select_queen(pid, player_turn, row, col)
+
+      %{table: %{players: players, queens_board: queens_board}, rules: rules} =
+        Game.get_state(pid)
+
+      # confirm selected the second queen from the board
+      refute Map.get(queens_board, queen_coordinate)
+
+      assert [%QueenCard{}, %QueenCard{name: "rose"}] =
+               players
+               |> Enum.find(&(&1.position == player_turn))
+               |> Map.get(:queens)
+
+      # confirm sets nil next waiting_on and advances player turn
+      next_player_turn = player_turn + 1
+      assert %{waiting_on: nil, player_turn: ^next_player_turn} = rules
     end
 
     test "successfully ends game when player selects enough queens" do
