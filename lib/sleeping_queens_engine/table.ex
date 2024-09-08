@@ -86,12 +86,7 @@ defmodule SleepingQueensEngine.Table do
 
   @spec deal_cards(Table.t(), player_position()) :: Table.t()
   def deal_cards(table, starting_player_position \\ 1) do
-    num_cards_needed = num_cards_needed_to_deal(table)
-
-    table =
-      if not_enough_cards_in_draw_pile?(table, num_cards_needed),
-        do: shuffle_discard_back_into_draw_pile(table),
-        else: table
+    table = reset_draw_pile_if_needed(table)
 
     # TODO::: find a better way to loop through players until each has 5 cards
     Enum.reduce_while(
@@ -251,6 +246,7 @@ defmodule SleepingQueensEngine.Table do
         player_position
       )
       when waiting_player_position == player_position do
+    table = reset_draw_pile_if_needed(table)
     [top_card | remaining_draw_pile] = table.draw_pile
 
     updated_table =
@@ -452,7 +448,7 @@ defmodule SleepingQueensEngine.Table do
           update_in(player.hand, fn hand
                                     when length(hand) <
                                            @max_allowed_cards_in_hand ->
-            [card_from_jester | hand]
+            hand ++ [card_from_jester]
           end)
         else
           player
@@ -579,6 +575,14 @@ defmodule SleepingQueensEngine.Table do
     |> Enum.find(&(&1.position == player_position))
     |> Map.get(:queens)
     |> Enum.any?(&(&1.name == queen_name))
+  end
+
+  defp reset_draw_pile_if_needed(table) do
+    num_cards_needed = num_cards_needed_to_deal(table)
+
+    if not_enough_cards_in_draw_pile?(table, num_cards_needed),
+      do: shuffle_discard_back_into_draw_pile(table),
+      else: table
   end
 
   defp num_cards_needed_to_deal(table) do

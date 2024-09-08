@@ -613,6 +613,11 @@ defmodule TableTest do
 
       assert table.draw_pile == []
       assert table.discard_pile == []
+
+      assert Enum.find(table.players, &(&1.position == 1)).hand == [
+               %Card{type: :king}
+             ]
+
       assert waiting_on == nil
     end
 
@@ -734,6 +739,40 @@ defmodule TableTest do
                action: :select_queen,
                player_position: 2
              }
+    end
+
+    test "successfully reshuffles the deck and draws card when the draw pile runs out",
+         %{table: table} do
+      rules = %Rules{
+        state: :playing,
+        player_count: 2,
+        player_turn: 1,
+        waiting_on: %{
+          player_position: 1,
+          action: :draw_for_jester
+        }
+      }
+
+      table = update_in(table.draw_pile, fn _draw_pile -> [] end)
+
+      table =
+        update_in(table.discard_pile, fn _draw_pile -> [%Card{type: :king}] end)
+
+      assert {:ok, table, waiting_on} =
+               Table.draw_for_jester(
+                 table,
+                 rules,
+                 rules.player_turn
+               )
+
+      assert table.draw_pile == []
+      assert table.discard_pile == []
+
+      assert Enum.find(table.players, &(&1.position == 1)).hand == [
+               %Card{type: :king}
+             ]
+
+      assert waiting_on == nil
     end
 
     test "errors if wrong waiting_on action",
