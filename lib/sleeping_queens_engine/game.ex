@@ -489,7 +489,8 @@ defmodule SleepingQueensEngine.Game do
            Rules.check(
              state.rules,
              {:play, player_position, next_waiting_on, next_queen_to_lose}
-           ) do
+           ),
+         {:ok, rules} <- Rules.check(rules, :deal_cards) do
       state
       |> update_rules(rules)
       |> reply(:ok)
