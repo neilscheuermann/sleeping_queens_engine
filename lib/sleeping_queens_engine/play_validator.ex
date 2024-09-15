@@ -135,6 +135,7 @@ defmodule SleepingQueensEngine.PlayValidator do
 
   defp can_protect_queen?(_waiting_action, _card), do: false
 
+  defp is_valid_discard?([%Card{type: :king}]), do: false
   defp is_valid_discard?([%Card{}]), do: true
 
   defp is_valid_discard?([

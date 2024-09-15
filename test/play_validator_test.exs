@@ -307,7 +307,7 @@ defmodule PlayValidatorTest do
     ]
 
     for card_type <-
-          [:king, :jester, :knight, :dragon, :wand, :sleeping_potion] ++
+          [:jester, :knight, :dragon, :wand, :sleeping_potion] ++
             Enum.to_list(1..10) do
       @tag player_turn: :player,
            cards_in_player_hand: [card_type]
@@ -328,6 +328,25 @@ defmodule PlayValidatorTest do
                    table
                  )
       end
+    end
+
+    @tag player_turn: :player, cards_in_player_hand: [:king]
+    test "returns error checking to discard a king",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      card_positions = [1]
+
+      assert :error =
+               PlayValidator.check(
+                 :discard,
+                 player_position,
+                 card_positions,
+                 rules,
+                 table
+               )
     end
 
     @tag player_turn: :player,
