@@ -198,7 +198,7 @@ defmodule SleepingQueensEngine.PlayValidator do
 
   defp can_play_offense_action_card?(%Card{type: type}, table, player_position)
        when type in [:knight, :sleeping_potion],
-       do: Table.others_have_a_queen?(table, player_position)
+       do: Table.others_have_a_stealable_queen?(table, player_position)
 
   defp can_play_offense_action_card?(_card, _table, _player_position), do: false
 end

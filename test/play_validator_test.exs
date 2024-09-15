@@ -4,6 +4,7 @@ defmodule PlayValidatorTest do
   alias SleepingQueensEngine.Card
   alias SleepingQueensEngine.PlayValidator
   alias SleepingQueensEngine.Player
+  alias SleepingQueensEngine.QueenCard
   alias SleepingQueensEngine.Rules
   alias SleepingQueensEngine.Table
 
@@ -83,6 +84,34 @@ defmodule PlayValidatorTest do
                 action: :steal_queen,
                 player_position: ^player_position
               }} =
+               PlayValidator.check(
+                 :play,
+                 player_position,
+                 card_positions,
+                 rules,
+                 table
+               )
+    end
+
+    @tag player_turn: :player, cards_in_player_hand: [:knight]
+    test "errors when checking to play a knight if the only queen out is the strawberry queen",
+         %{
+           player: %{position: player_position},
+           rules: rules,
+           table: table
+         } do
+      queen_card = %QueenCard{
+        name: "strawberry",
+        value: 10,
+        special?: true
+      }
+
+      opponent_position = 2
+      table = replace_player_queens_with(table, opponent_position, [queen_card])
+
+      card_positions = [1]
+
+      assert :error =
                PlayValidator.check(
                  :play,
                  player_position,
@@ -624,6 +653,18 @@ defmodule PlayValidatorTest do
       else
         player
       end
+    end)
+  end
+
+  defp replace_player_queens_with(table, player_position, queens) do
+    update_in(table.players, fn players ->
+      Enum.map(players, fn player ->
+        if player.position == player_position do
+          %{player | queens: queens}
+        else
+          player
+        end
+      end)
     end)
   end
 

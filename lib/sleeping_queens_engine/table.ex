@@ -267,12 +267,14 @@ defmodule SleepingQueensEngine.Table do
   @doc """
   Given a player's position, it tells if any others have a queen.
   """
-  @spec others_have_a_queen?(Table.t(), player_position()) :: boolean()
-  def others_have_a_queen?(table, player_position) do
+  @spec others_have_a_stealable_queen?(Table.t(), player_position()) ::
+          boolean()
+  def others_have_a_stealable_queen?(table, player_position) do
     table
     |> Map.get(:players)
     |> Enum.filter(&(&1.position != player_position))
     |> Enum.any?(fn
+      %{queens: [%QueenCard{name: "strawberry"}]} -> false
       %{queens: [_ | _]} -> true
       _ -> false
     end)

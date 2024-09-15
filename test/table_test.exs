@@ -833,7 +833,7 @@ defmodule TableTest do
     end
   end
 
-  describe "others_have_a_queen?/4" do
+  describe "others_have_a_stealable_queen?/4" do
     setup do
       player1 = Player.new("Ron")
       player2 = Player.new("Leslie")
@@ -846,13 +846,52 @@ defmodule TableTest do
       }
     end
 
-    test "true when 1 other player has a queen", %{table: table} do
+    test "false when 1 other player has the non-stealable strawberry queen", %{
+      table: table
+    } do
       current_player = Enum.at(table.players, 0)
       other_player = Enum.at(table.players, 1)
 
-      {:ok, table, _} = Table.select_queen(table, {1, 1}, other_player.position)
+      queen_card = %QueenCard{
+        name: "strawberry",
+        value: 10,
+        special?: true
+      }
 
-      assert Table.others_have_a_queen?(table, current_player.position)
+      table =
+        place_queen_on_board_at_location(table, queen_card, @queen_coordinate)
+
+      {:ok, table, _} =
+        Table.select_queen(table, @queen_coordinate, other_player.position)
+
+      assert false ==
+               Table.others_have_a_stealable_queen?(
+                 table,
+                 current_player.position
+               )
+    end
+
+    test "true when 1 other player has a stealable queen", %{table: table} do
+      current_player = Enum.at(table.players, 0)
+      other_player = Enum.at(table.players, 1)
+
+      queen_card = %QueenCard{
+        name: "not strawberry",
+        value: 10,
+        special?: false
+      }
+
+      table =
+        place_queen_on_board_at_location(table, queen_card, @queen_coordinate)
+
+      {:ok, table, _} =
+        Table.select_queen(table, @queen_coordinate, other_player.position)
+
+      assert true ==
+               Table.others_have_a_stealable_queen?(
+                 table,
+                 current_player.position
+               )
     end
 
     test "true when 2+ other players have a queen", %{table: table} do
@@ -866,7 +905,10 @@ defmodule TableTest do
       {:ok, table, _} =
         Table.select_queen(table, {1, 2}, other_player2.position)
 
-      assert Table.others_have_a_queen?(table, current_player.position)
+      assert Table.others_have_a_stealable_queen?(
+               table,
+               current_player.position
+             )
     end
 
     test "false when current player has a queen", %{table: table} do
@@ -875,13 +917,19 @@ defmodule TableTest do
       {:ok, table, _} =
         Table.select_queen(table, {1, 1}, current_player.position)
 
-      refute Table.others_have_a_queen?(table, current_player.position)
+      refute Table.others_have_a_stealable_queen?(
+               table,
+               current_player.position
+             )
     end
 
     test "false when no one has a queen", %{table: table} do
       current_player = Enum.at(table.players, 0)
 
-      refute Table.others_have_a_queen?(table, current_player.position)
+      refute Table.others_have_a_stealable_queen?(
+               table,
+               current_player.position
+             )
     end
   end
 
