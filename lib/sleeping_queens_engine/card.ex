@@ -19,7 +19,21 @@ defmodule SleepingQueensEngine.Card do
           | :jester
         ]
 
-  @kings ~w(name1 name2 name3 name4 name5 name6 name7 name8 name9 name10)a
+  @kings [
+    "tie-dye",
+    "puzzle",
+    "cookie",
+    "fire",
+    "turtle",
+    "bubble gum",
+    "hat",
+    "chess",
+    "drum",
+    "tool",
+    "train",
+    "pasta"
+  ]
+
   @offense_action_card_types [:king, :jester, :knight, :sleeping_potion]
 
   @spec draw_pile_shuffled() :: list(__MODULE__.t())
